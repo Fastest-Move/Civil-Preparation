@@ -469,7 +469,7 @@ function renderAuth(){
   pass.addEventListener("keydown",e=>{if(e.key==="Enter")doLogin();});
   const card=el("div",{class:"auth-card"},
     el("div",{class:"auth-brand"},el("span",{class:"mark"},"CBT"),el("span",{class:"t"},"CBT Platform")),
-    el("div",{class:"auth-sub"},"Lagos State Civil Service — promotion examination practice"),
+    el("div",{class:"auth-sub"},"Civil Service — Promotion Examination Practice"),
     el("div",{class:"field"},el("label",{},"Username"),uname),
     el("div",{class:"field"},el("label",{},"Password"),pass),
     el("button",{class:"btn",style:"width:100%;margin-top:.4rem",onclick:doLogin},"Log in")
