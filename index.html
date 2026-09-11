@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CBT Platform — Lagos State Civil Service Promotion Practice</title>
+<style>
+:root{
+  --ink:#132638; --muted:#5b6b78; --primary:#0e4d6b; --primary-600:#0b3e57;
+  --accent:#e0a21a; --accent-soft:#fbf0d6;
+  --bg:#eef2f5; --surface:#ffffff; --line:#d9e0e6; --line-soft:#e8edf1;
+  --success:#1f7a54; --success-bg:#e4f3eb; --danger:#b23a3a; --danger-bg:#f8e8e8;
+  --radius:12px; --radius-sm:8px; --shadow:0 1px 2px rgba(19,38,56,.06),0 6px 20px rgba(19,38,56,.06);
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font-family:var(--font);font-size:17px;line-height:1.5;color:var(--ink);background:var(--bg);
+  -webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{line-height:1.2;margin:0 0 .4em;font-weight:700;letter-spacing:-.01em}
+h1{font-size:1.7rem} h2{font-size:1.3rem} h3{font-size:1.08rem}
+p{margin:0 0 1rem} a{color:var(--primary)}
+button{font-family:inherit;font-size:1rem;cursor:pointer}
+input,select,textarea{font-family:inherit;font-size:1rem}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:4px}
+.hidden{display:none !important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* Layout */
+.app{min-height:100vh;display:flex;flex-direction:column}
+.topbar{background:var(--primary);color:#fff;display:flex;align-items:center;gap:1rem;
+  padding:.7rem 1.1rem;position:sticky;top:0;z-index:20;box-shadow:0 2px 10px rgba(11,62,87,.25)}
+.topbar .brand{display:flex;align-items:center;gap:.6rem;font-weight:700;font-size:1.15rem}
+.topbar .brand .mark{width:30px;height:30px;border-radius:7px;background:var(--accent);color:var(--primary-600);
+  display:grid;place-items:center;font-weight:800;font-size:.95rem}
+.topbar .spacer{flex:1}
+.topbar .who{font-size:.9rem;opacity:.95;text-align:right;line-height:1.25}
+.topbar .who b{display:block;font-size:.98rem}
+.btn{border:1px solid transparent;border-radius:var(--radius-sm);padding:.62rem 1.05rem;font-weight:600;
+  background:var(--primary);color:#fff;transition:background .15s,transform .05s}
+.btn:hover{background:var(--primary-600)} .btn:active{transform:translateY(1px)}
+.btn.ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.5)}
+.btn.ghost:hover{background:rgba(255,255,255,.12)}
+.btn.sec{background:var(--surface);color:var(--primary);border-color:var(--line)}
+.btn.sec:hover{background:#f3f7f9}
+.btn.warn{background:var(--accent);color:#5b4409} .btn.warn:hover{filter:brightness(.96)}
+.btn.danger{background:var(--danger)} .btn.danger:hover{filter:brightness(.94)}
+.btn.sm{padding:.4rem .7rem;font-size:.86rem}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.main{flex:1;width:100%;max-width:1120px;margin:0 auto;padding:1.4rem 1.1rem 3rem}
+
+/* Cards */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  padding:1.3rem;box-shadow:var(--shadow);margin-bottom:1.1rem}
+.card h2{margin-top:0}
+.grid{display:grid;gap:1.1rem}
+.grid.cols2{grid-template-columns:repeat(2,1fr)}
+.grid.cols3{grid-template-columns:repeat(3,1fr)}
+.grid.cols4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:820px){.grid.cols2,.grid.cols3,.grid.cols4{grid-template-columns:1fr}}
+
+/* Forms */
+.field{margin-bottom:1rem}
+.field label{display:block;font-weight:600;font-size:.92rem;margin-bottom:.35rem;color:var(--ink)}
+.field .hint{font-weight:400;color:var(--muted);font-size:.85rem}
+input[type=text],input[type=password],input[type=number],input[type=email],select,textarea{
+  width:100%;padding:.7rem .8rem;border:1.5px solid var(--line);border-radius:var(--radius-sm);
+  background:#fff;color:var(--ink)}
+input:focus,select:focus,textarea:focus{border-color:var(--primary);outline:none;box-shadow:0 0 0 3px rgba(14,77,107,.15)}
+textarea{min-height:120px;resize:vertical}
+.row{display:flex;gap:.8rem;flex-wrap:wrap}
+.row>*{flex:1;min-width:180px}
+
+/* Auth screen */
+.auth-wrap{min-height:100vh;display:grid;place-items:center;padding:1.2rem;
+  background:linear-gradient(160deg,#0e4d6b 0%,#0b3e57 60%,#0a3247 100%)}
+.auth-card{background:var(--surface);border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.3);
+  width:100%;max-width:430px;padding:2rem 1.8rem}
+.auth-brand{display:flex;align-items:center;gap:.7rem;margin-bottom:.3rem}
+.auth-brand .mark{width:44px;height:44px;border-radius:10px;background:var(--accent);color:var(--primary-600);
+  display:grid;place-items:center;font-weight:800;font-size:1.2rem}
+.auth-brand .t{font-weight:800;font-size:1.35rem;color:var(--primary)}
+.auth-sub{color:var(--muted);margin-bottom:1.5rem;font-size:.95rem}
+
+/* Badges / pills */
+.badge{display:inline-block;padding:.2rem .6rem;border-radius:999px;font-size:.78rem;font-weight:600;
+  background:var(--accent-soft);color:#8a6608}
+.badge.role-super{background:#e7ecf2;color:var(--primary-600)}
+.badge.role-admin{background:#e3f0f5;color:var(--primary)}
+.badge.role-user{background:var(--accent-soft);color:#8a6608}
+.badge.ok{background:var(--success-bg);color:var(--success)}
+.badge.bad{background:var(--danger-bg);color:var(--danger)}
+.badge.lock{background:#eceff2;color:var(--muted)}
+
+/* Tables */
+table{width:100%;border-collapse:collapse;font-size:.93rem}
+th,td{text-align:left;padding:.6rem .55rem;border-bottom:1px solid var(--line-soft);vertical-align:middle}
+th{font-size:.8rem;color:var(--muted);font-weight:700}
+tr:hover td{background:#fafcfd}
+.table-wrap{overflow-x:auto}
+
+/* Tabs */
+.tabs{display:flex;gap:.3rem;flex-wrap:wrap;border-bottom:2px solid var(--line);margin-bottom:1.2rem}
+.tab{background:none;border:none;padding:.7rem 1rem;font-weight:600;color:var(--muted);
+  border-bottom:3px solid transparent;margin-bottom:-2px}
+.tab.active{color:var(--primary);border-bottom-color:var(--accent)}
+
+/* Progress bar */
+.progress{height:12px;background:var(--line-soft);border-radius:999px;overflow:hidden}
+.progress .fill{height:100%;background:linear-gradient(90deg,var(--primary),var(--accent));
+  transition:width .5s ease}
+.stat{text-align:center;padding:.4rem}
+.stat .n{font-size:2rem;font-weight:800;color:var(--primary);line-height:1}
+.stat .l{font-size:.82rem;color:var(--muted);margin-top:.3rem}
+
+/* Bars for category analytics */
+.catbar{display:grid;grid-template-columns:1fr;gap:.7rem}
+.catbar .item{display:grid;grid-template-columns:190px 1fr 52px;align-items:center;gap:.7rem}
+@media(max-width:640px){.catbar .item{grid-template-columns:130px 1fr 44px}}
+.catbar .lab{font-size:.9rem;font-weight:600}
+.catbar .track{height:14px;background:var(--line-soft);border-radius:999px;overflow:hidden}
+.catbar .bar{height:100%;border-radius:999px}
+.catbar .pct{text-align:right;font-weight:700;font-size:.9rem}
+
+/* Exam */
+.exam-head{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:1rem}
+.qpalette{display:flex;flex-wrap:wrap;gap:.35rem;margin:.5rem 0 0}
+.qdot{width:34px;height:34px;border-radius:7px;border:1.5px solid var(--line);background:#fff;
+  font-size:.85rem;font-weight:700;color:var(--muted)}
+.qdot.answered{background:var(--primary);color:#fff;border-color:var(--primary)}
+.qdot.current{outline:3px solid var(--accent);outline-offset:1px}
+.qstem{font-size:1.22rem;font-weight:600;margin:.2rem 0 1.1rem;line-height:1.45}
+.opt{display:block;width:100%;text-align:left;padding:.85rem 1rem;border:1.5px solid var(--line);
+  border-radius:var(--radius-sm);background:#fff;margin-bottom:.6rem;font-size:1.02rem;transition:.12s}
+.opt:hover{border-color:var(--primary)}
+.opt.sel{border-color:var(--primary);background:#eef6fa;box-shadow:0 0 0 2px rgba(14,77,107,.15)}
+.opt.correct{border-color:var(--success);background:var(--success-bg)}
+.opt.wrong{border-color:var(--danger);background:var(--danger-bg)}
+.timer{font-weight:800;font-size:1.1rem;background:var(--accent-soft);color:#8a6608;
+  padding:.3rem .8rem;border-radius:8px}
+.timer.low{background:var(--danger-bg);color:var(--danger)}
+
+/* drag-drop ordering */
+.dnd{list-style:none;padding:0;margin:0}
+.dnd li{padding:.8rem 1rem;border:1.5px solid var(--line);border-radius:var(--radius-sm);
+  background:#fff;margin-bottom:.55rem;display:flex;align-items:center;gap:.7rem;cursor:grab}
+.dnd li.dragging{opacity:.5;border-style:dashed}
+.dnd li .grip{color:var(--muted);font-size:1.2rem;cursor:grab}
+.dnd li .num{width:26px;height:26px;border-radius:6px;background:var(--primary);color:#fff;
+  display:grid;place-items:center;font-size:.85rem;font-weight:700;flex:none}
+.dnd .updown{margin-left:auto;display:flex;gap:.25rem}
+
+/* matching */
+.match-row{display:grid;grid-template-columns:1fr 220px;gap:.7rem;align-items:center;margin-bottom:.55rem}
+@media(max-width:560px){.match-row{grid-template-columns:1fr}}
+.match-row .left{padding:.75rem .9rem;border:1.5px solid var(--line);border-radius:var(--radius-sm);
+  background:#f7fafb;font-weight:600}
+
+/* review */
+.review-q{border:1.5px solid var(--line);border-radius:var(--radius);padding:1.1rem;margin-bottom:1rem}
+.review-q.correct{border-left:5px solid var(--success)}
+.review-q.wrong{border-left:5px solid var(--danger)}
+.explain{background:#f3f8fb;border:1px solid var(--line);border-left:4px solid var(--primary);
+  border-radius:8px;padding:.85rem 1rem;margin-top:.8rem;font-size:.98rem}
+.explain b{color:var(--primary)}
+
+/* toast + modal */
+.toast{position:fixed;bottom:1.2rem;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;
+  padding:.8rem 1.3rem;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.3);z-index:100;
+  font-weight:600;max-width:90vw}
+.toast.ok{background:var(--success)} .toast.err{background:var(--danger)}
+.modal-bg{position:fixed;inset:0;background:rgba(19,38,56,.55);display:grid;place-items:center;
+  z-index:90;padding:1rem}
+.modal{background:#fff;border-radius:14px;max-width:560px;width:100%;padding:1.6rem;
+  max-height:90vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.kv{display:flex;justify-content:space-between;padding:.4rem 0;border-bottom:1px solid var(--line-soft);font-size:.93rem}
+.kv span:first-child{color:var(--muted)}
+.notice{background:var(--accent-soft);border:1px solid #eed49a;border-radius:8px;padding:.8rem 1rem;
+  font-size:.9rem;color:#6b5208;margin-bottom:1rem}
+.empty{text-align:center;color:var(--muted);padding:2.5rem 1rem}
+@media(prefers-reduced-motion:reduce){*{transition:none !important;animation:none !important}}
+</style>
+</head>
+<body>
+<div id="auth"></div>
+<div id="app" class="app hidden">
+  <header class="topbar">
+    <div class="brand"><span class="mark">CBT</span><span>CBT Platform</span></div>
+    <div class="spacer"></div>
+    <div class="who" id="whoami"></div>
+    <button class="btn ghost sm" id="logoutBtn">Log out</button>
+  </header>
+  <main class="main" id="view"></main>
+</div>
+<div id="modalMount"></div>
+<script>
+const CADRES = [{"name":"Administrative Officer Cadre","levels":[{"gl":"08","post":"Administrative Officer II"},{"gl":"09","post":"Administrative Officer"},{"gl":"10","post":"Senior Administrative Officer"},{"gl":"12","post":"Principal Administrative Officer I"},{"gl":"13","post":"Chief Administrative Officer"},{"gl":"14","post":"Assistant Director (Admin & Human Resources)"},{"gl":"15","post":"Deputy Director (Admin & Human Resources)"},{"gl":"16","post":"Director (Admin & Human Resources)"}]},{"name":"Executive Officer (General Duties) Cadre","levels":[{"gl":"06","post":"Assistant Executive Officer (GD)"},{"gl":"07","post":"Executive Officer (GD)"},{"gl":"08","post":"Higher Executive Officer (GD)"},{"gl":"09","post":"Senior Executive Officer (GD)"},{"gl":"10","post":"Principal Executive Officer II (GD)"},{"gl":"12","post":"Principal Executive Officer I (GD)"},{"gl":"13","post":"Assistant Chief Executive Officer (GD)"},{"gl":"14","post":"Chief Executive Officer (GD)"}]},{"name":"Executive Officer (Accounts) Cadre","levels":[{"gl":"06","post":"Assistant Executive Officer (Accounts)"},{"gl":"07","post":"Executive Officer (Accounts)"},{"gl":"08","post":"Higher Executive Officer (Accounts)"},{"gl":"09","post":"Senior Executive Officer (Accounts)"},{"gl":"10","post":"Principal Executive Officer II (Accounts)"},{"gl":"12","post":"Principal Executive Officer I (Accounts)"},{"gl":"13","post":"Assistant Chief Executive Officer (Accounts)"},{"gl":"14","post":"Chief Executive Officer (Accounts)"}]},{"name":"Executive Officer (Audit) Cadre","levels":[{"gl":"06","post":"Assistant Executive Officer (Audit)"},{"gl":"07","post":"Executive Officer (Audit)"},{"gl":"08","post":"Higher Executive Officer (Audit)"},{"gl":"09","post":"Senior Executive Officer (Audit)"},{"gl":"10","post":"Principal Executive Officer II (Audit)"},{"gl":"12","post":"Principal Executive Officer I (Audit)"},{"gl":"13","post":"Assistant Chief Executive Officer (Audit)"},{"gl":"14","post":"Chief Executive Officer (Audit)"}]},{"name":"Executive Officer (Information) Cadre","levels":[{"gl":"06","post":"Assistant Executive Officer (Information)"},{"gl":"07","post":"Executive Officer (Information)"},{"gl":"08","post":"Higher Executive Officer (Information)"},{"gl":"09","post":"Senior Executive Officer (Information)"},{"gl":"10","post":"Principal Executive Officer II (Information)"},{"gl":"12","post":"Principal Executive Officer I (Information)"},{"gl":"13","post":"Assistant Chief Executive Officer (Information)"},{"gl":"14","post":"Chief Executive Officer (Information)"}]},{"name":"Clerical Cadre","levels":[{"gl":"03","post":"Clerical Assistant"},{"gl":"04","post":"Clerical Officer II"},{"gl":"05","post":"Clerical Officer I"},{"gl":"06","post":"Senior Clerical Officer"},{"gl":"07","post":"Chief Clerical Officer"}]},{"name":"Assistant Secretarial Officer Cadre","levels":[{"gl":"04","post":"Assistant Secretarial Officer II"},{"gl":"05","post":"Assistant Secretarial Officer"},{"gl":"06","post":"Senior Assistant Secretarial Officer II"},{"gl":"07","post":"Senior Assistant Secretarial Officer I"},{"gl":"09","post":"Chief Assistant Secretarial Officer II"},{"gl":"10","post":"Chief Assistant Secretarial Officer"}]},{"name":"Secretarial Officer Cadre (Confidential Secretary)","levels":[{"gl":"05","post":"Secretarial Officer IV"},{"gl":"06","post":"Secretarial Officer III"},{"gl":"07","post":"Secretarial Officer II"},{"gl":"08","post":"Secretarial Officer I"},{"gl":"09","post":"Senior Secretarial Officer"},{"gl":"10","post":"Principal Secretarial Officer II"},{"gl":"12","post":"Principal Secretarial Officer I"},{"gl":"13","post":"Assistant Chief Secretarial Officer"},{"gl":"14","post":"Chief Secretarial Officer"}]},{"name":"Storekeeper Cadre","levels":[{"gl":"03","post":"Stores Assistant"},{"gl":"04","post":"Storekeeper"},{"gl":"05","post":"Senior Storekeeper"},{"gl":"06","post":"Assistant Chief Storekeeper"},{"gl":"07","post":"Chief Storekeeper"}]},{"name":"Stores Officer Cadre","levels":[{"gl":"06","post":"Assistant Stores Officer"},{"gl":"07","post":"Stores Officer"},{"gl":"08","post":"Higher Stores Officer"},{"gl":"09","post":"Senior Stores Officer"},{"gl":"10","post":"Principal Stores Officer II"},{"gl":"12","post":"Principal Stores Officer I"},{"gl":"13","post":"Assistant Chief Stores Officer"},{"gl":"14","post":"Chief Stores Officer"}]},{"name":"Data Processing / ICT Cadre","levels":[{"gl":"06","post":"Assistant Data Processing Officer"},{"gl":"07","post":"Data Processing Officer"},{"gl":"08","post":"Higher Data Processing Officer"},{"gl":"09","post":"Senior Data Processing Officer"},{"gl":"10","post":"Principal Data Processing Officer II"},{"gl":"12","post":"Principal Data Processing Officer I"},{"gl":"13","post":"Assistant Chief Data Processing Officer"},{"gl":"14","post":"Chief Data Processing Officer"}]},{"name":"Library Officer Cadre","levels":[{"gl":"06","post":"Assistant Library Officer"},{"gl":"07","post":"Library Officer"},{"gl":"08","post":"Higher Library Officer"},{"gl":"09","post":"Senior Library Officer"},{"gl":"10","post":"Principal Library Officer"},{"gl":"12","post":"Assistant Chief Library Officer"},{"gl":"13","post":"Chief Library Officer"}]},{"name":"Librarian Cadre","levels":[{"gl":"08","post":"Librarian"},{"gl":"09","post":"Senior Librarian"},{"gl":"10","post":"Principal Librarian"},{"gl":"12","post":"Assistant Chief Librarian"},{"gl":"13","post":"Chief Librarian"},{"gl":"14","post":"Assistant Director (Library)"},{"gl":"15","post":"Deputy Director (Library)"},{"gl":"16","post":"Director (Library)"}]},{"name":"Teacher / Headmaster Cadre","levels":[{"gl":"05","post":"Teacher Grade II"},{"gl":"07","post":"Teacher Grade I / Master II"},{"gl":"08","post":"Headmaster II"},{"gl":"09","post":"Headmaster"},{"gl":"10","post":"Headmaster Special II"},{"gl":"12","post":"Headmaster Special I"}]},{"name":"Assistant Education Officer Cadre","levels":[{"gl":"07","post":"Assistant Education Officer"},{"gl":"08","post":"Higher Assistant Education Officer"},{"gl":"09","post":"Senior Assistant Education Officer II"},{"gl":"10","post":"Senior Assistant Education Officer"},{"gl":"12","post":"Principal Assistant Education Officer II"},{"gl":"13","post":"Principal Assistant Education Officer I"},{"gl":"14","post":"Chief Assistant Education Officer"}]},{"name":"Education Officer Cadre","levels":[{"gl":"08","post":"Education Officer II"},{"gl":"09","post":"Education Officer I"},{"gl":"10","post":"Senior Education Officer"},{"gl":"12","post":"Principal Education Officer"},{"gl":"13","post":"Assistant Chief Education Officer"},{"gl":"14","post":"Chief Education Officer"},{"gl":"15","post":"Assistant Director (Education)"},{"gl":"16","post":"Deputy Director (Education)"},{"gl":"17","post":"Director (Education)"}]},{"name":"Catering Officer Cadre","levels":[{"gl":"06","post":"Assistant Catering Officer"},{"gl":"07","post":"Catering Officer"},{"gl":"08","post":"Higher Catering Officer"},{"gl":"09","post":"Senior Catering Officer"},{"gl":"10","post":"Principal Catering Officer"},{"gl":"12","post":"Assistant Chief Catering Officer"},{"gl":"13","post":"Chief Catering Officer"}]},{"name":"Catering Assistant Cadre","levels":[{"gl":"04","post":"Catering Assistant"},{"gl":"05","post":"Senior Catering Assistant II"},{"gl":"06","post":"Senior Catering Assistant I"},{"gl":"07","post":"Chief Catering Assistant"}]},{"name":"Driver Cadre","levels":[{"gl":"03","post":"Motor Driver"},{"gl":"04","post":"Motor Driver-Mechanic"},{"gl":"05","post":"Senior Motor Driver-Mechanic II"},{"gl":"06","post":"Senior Motor Driver-Mechanic I"},{"gl":"07","post":"Chief Motor Driver-Mechanic"}]},{"name":"Messenger Cadre","levels":[{"gl":"02","post":"Messenger"},{"gl":"03","post":"Senior Messenger"},{"gl":"04","post":"Head Messenger"}]},{"name":"Watchman Cadre","levels":[{"gl":"01","post":"Watchman"},{"gl":"02","post":"Watchman II"},{"gl":"03","post":"Higher Watchman"},{"gl":"04","post":"Senior Watchman"},{"gl":"05","post":"Head Watchman"}]},{"name":"Cleaner Cadre","levels":[{"gl":"01","post":"Cleaner"},{"gl":"02","post":"Senior Cleaner"},{"gl":"03","post":"Head Cleaner"}]},{"name":"Gardener Cadre","levels":[{"gl":"02","post":"Gardener"},{"gl":"03","post":"Head Gardener"}]},{"name":"Medical Officer Cadre","levels":[{"gl":"08","post":"Medical Officer II"},{"gl":"09","post":"Medical Officer I"},{"gl":"10","post":"Senior Medical Officer"},{"gl":"12","post":"Principal Medical Officer"},{"gl":"13","post":"Assistant Chief Medical Officer"},{"gl":"14","post":"Chief Medical Officer"},{"gl":"15","post":"Assistant Director (Medical Services)"},{"gl":"16","post":"Deputy Director (Medical Services)"},{"gl":"17","post":"Director (Medical Services)"}]},{"name":"Nursing Officer Cadre","levels":[{"gl":"08","post":"Nursing Officer II"},{"gl":"09","post":"Nursing Officer I"},{"gl":"10","post":"Senior Nursing Officer"},{"gl":"12","post":"Principal Nursing Officer"},{"gl":"13","post":"Assistant Chief Nursing Officer"},{"gl":"14","post":"Chief Nursing Officer"},{"gl":"15","post":"Assistant Director (Nursing Services)"},{"gl":"16","post":"Deputy Director (Nursing Services)"},{"gl":"17","post":"Director (Nursing Services)"}]},{"name":"Midwifery Cadre","levels":[{"gl":"08","post":"Midwife II"},{"gl":"09","post":"Midwife I"},{"gl":"10","post":"Senior Midwife"},{"gl":"12","post":"Principal Midwife"},{"gl":"13","post":"Assistant Chief Midwife"},{"gl":"14","post":"Chief Midwife"},{"gl":"15","post":"Assistant Director (Nursing Services)"},{"gl":"16","post":"Deputy Director (Nursing Services)"},{"gl":"17","post":"Director (Nursing Services)"}]},{"name":"Community Health Cadre","levels":[{"gl":"08","post":"Community Health Officer II"},{"gl":"09","post":"Community Health Officer I"},{"gl":"10","post":"Senior Community Health Officer"},{"gl":"12","post":"Principal Community Health Officer"},{"gl":"13","post":"Assistant Chief Community Health Officer"},{"gl":"14","post":"Chief Community Health Officer"},{"gl":"15","post":"Assistant Director (Community Health Services)"},{"gl":"16","post":"Deputy Director (Community Health Services)"},{"gl":"17","post":"Director (Community Health Services)"}]},{"name":"Pharmacy Cadre","levels":[{"gl":"08","post":"Pharmacist II"},{"gl":"09","post":"Pharmacist I"},{"gl":"10","post":"Senior Pharmacist"},{"gl":"12","post":"Principal Pharmacist"},{"gl":"13","post":"Assistant Chief Pharmacist"},{"gl":"14","post":"Chief Pharmacist"},{"gl":"15","post":"Assistant Director (Pharmaceutical Services)"},{"gl":"16","post":"Deputy Director (Pharmaceutical Services)"},{"gl":"17","post":"Director (Pharmaceutical Services)"}]},{"name":"Medical Laboratory Science Cadre","levels":[{"gl":"08","post":"Medical Laboratory Scientist II"},{"gl":"09","post":"Medical Laboratory Scientist I"},{"gl":"10","post":"Senior Medical Laboratory Scientist"},{"gl":"12","post":"Principal Medical Laboratory Scientist"},{"gl":"13","post":"Assistant Chief Medical Laboratory Scientist"},{"gl":"14","post":"Chief Medical Laboratory Scientist"},{"gl":"15","post":"Assistant Director (Medical Laboratory Services)"},{"gl":"16","post":"Deputy Director (Medical Laboratory Services)"},{"gl":"17","post":"Director (Medical Laboratory Services)"}]},{"name":"Radiography Cadre","levels":[{"gl":"08","post":"Radiographer II"},{"gl":"09","post":"Radiographer I"},{"gl":"10","post":"Senior Radiographer"},{"gl":"12","post":"Principal Radiographer"},{"gl":"13","post":"Assistant Chief Radiographer"},{"gl":"14","post":"Chief Radiographer"},{"gl":"15","post":"Assistant Director (Radiography Services)"},{"gl":"16","post":"Deputy Director (Radiography Services)"},{"gl":"17","post":"Director (Radiography Services)"}]},{"name":"Physiotherapy Cadre","levels":[{"gl":"08","post":"Physiotherapist II"},{"gl":"09","post":"Physiotherapist I"},{"gl":"10","post":"Senior Physiotherapist"},{"gl":"12","post":"Principal Physiotherapist"},{"gl":"13","post":"Assistant Chief Physiotherapist"},{"gl":"14","post":"Chief Physiotherapist"},{"gl":"15","post":"Assistant Director (Physiotherapy Services)"},{"gl":"16","post":"Deputy Director (Physiotherapy Services)"},{"gl":"17","post":"Director (Physiotherapy Services)"}]},{"name":"Dental Cadre","levels":[{"gl":"08","post":"Dental Therapist II"},{"gl":"09","post":"Dental Therapist I"},{"gl":"10","post":"Senior Dental Therapist"},{"gl":"12","post":"Principal Dental Therapist"},{"gl":"13","post":"Assistant Chief Dental Therapist"},{"gl":"14","post":"Chief Dental Therapist"},{"gl":"15","post":"Assistant Director (Dental Services)"},{"gl":"16","post":"Deputy Director (Dental Services)"},{"gl":"17","post":"Director (Dental Services)"}]},{"name":"Health Records Cadre","levels":[{"gl":"08","post":"Health Records Officer II"},{"gl":"09","post":"Health Records Officer I"},{"gl":"10","post":"Senior Health Records Officer"},{"gl":"12","post":"Principal Health Records Officer"},{"gl":"13","post":"Assistant Chief Health Records Officer"},{"gl":"14","post":"Chief Health Records Officer"},{"gl":"15","post":"Assistant Director (Health Records)"},{"gl":"16","post":"Deputy Director (Health Records)"},{"gl":"17","post":"Director (Health Records)"}]},{"name":"Environmental Health Cadre","levels":[{"gl":"08","post":"Environmental Health Officer II"},{"gl":"09","post":"Environmental Health Officer I"},{"gl":"10","post":"Senior Environmental Health Officer"},{"gl":"12","post":"Principal Environmental Health Officer"},{"gl":"13","post":"Assistant Chief Environmental Health Officer"},{"gl":"14","post":"Chief Environmental Health Officer"},{"gl":"15","post":"Assistant Director (Environmental Health)"},{"gl":"16","post":"Deputy Director (Environmental Health)"},{"gl":"17","post":"Director (Environmental Health)"}]},{"name":"Civil Engineering Cadre","levels":[{"gl":"08","post":"Civil Engineer II"},{"gl":"09","post":"Civil Engineer I"},{"gl":"10","post":"Senior Civil Engineer"},{"gl":"12","post":"Principal Civil Engineer"},{"gl":"13","post":"Assistant Chief Civil Engineer"},{"gl":"14","post":"Chief Civil Engineer"},{"gl":"15","post":"Assistant Director (Engineering)"},{"gl":"16","post":"Deputy Director (Engineering)"},{"gl":"17","post":"Director (Engineering)"}]},{"name":"Mechanical Engineering Cadre","levels":[{"gl":"08","post":"Mechanical Engineer II"},{"gl":"09","post":"Mechanical Engineer I"},{"gl":"10","post":"Senior Mechanical Engineer"},{"gl":"12","post":"Principal Mechanical Engineer"},{"gl":"13","post":"Assistant Chief Mechanical Engineer"},{"gl":"14","post":"Chief Mechanical Engineer"},{"gl":"15","post":"Assistant Director (Engineering)"},{"gl":"16","post":"Deputy Director (Engineering)"},{"gl":"17","post":"Director (Engineering)"}]},{"name":"Electrical Engineering Cadre","levels":[{"gl":"08","post":"Electrical Engineer II"},{"gl":"09","post":"Electrical Engineer I"},{"gl":"10","post":"Senior Electrical Engineer"},{"gl":"12","post":"Principal Electrical Engineer"},{"gl":"13","post":"Assistant Chief Electrical Engineer"},{"gl":"14","post":"Chief Electrical Engineer"},{"gl":"15","post":"Assistant Director (Engineering)"},{"gl":"16","post":"Deputy Director (Engineering)"},{"gl":"17","post":"Director (Engineering)"}]},{"name":"Structural Engineering Cadre","levels":[{"gl":"08","post":"Structural Engineer II"},{"gl":"09","post":"Structural Engineer I"},{"gl":"10","post":"Senior Structural Engineer"},{"gl":"12","post":"Principal Structural Engineer"},{"gl":"13","post":"Assistant Chief Structural Engineer"},{"gl":"14","post":"Chief Structural Engineer"},{"gl":"15","post":"Assistant Director (Engineering)"},{"gl":"16","post":"Deputy Director (Engineering)"},{"gl":"17","post":"Director (Engineering)"}]},{"name":"Architecture Cadre","levels":[{"gl":"08","post":"Architect II"},{"gl":"09","post":"Architect I"},{"gl":"10","post":"Senior Architect"},{"gl":"12","post":"Principal Architect"},{"gl":"13","post":"Assistant Chief Architect"},{"gl":"14","post":"Chief Architect"},{"gl":"15","post":"Assistant Director (Architecture)"},{"gl":"16","post":"Deputy Director (Architecture)"},{"gl":"17","post":"Director (Architecture)"}]},{"name":"Town Planning Cadre","levels":[{"gl":"08","post":"Town Planning Officer II"},{"gl":"09","post":"Town Planning Officer I"},{"gl":"10","post":"Senior Town Planning Officer"},{"gl":"12","post":"Principal Town Planning Officer"},{"gl":"13","post":"Assistant Chief Town Planning Officer"},{"gl":"14","post":"Chief Town Planning Officer"},{"gl":"15","post":"Assistant Director (Town Planning)"},{"gl":"16","post":"Deputy Director (Town Planning)"},{"gl":"17","post":"Director (Town Planning)"}]},{"name":"Quantity Surveying Cadre","levels":[{"gl":"08","post":"Quantity Surveyor II"},{"gl":"09","post":"Quantity Surveyor I"},{"gl":"10","post":"Senior Quantity Surveyor"},{"gl":"12","post":"Principal Quantity Surveyor"},{"gl":"13","post":"Assistant Chief Quantity Surveyor"},{"gl":"14","post":"Chief Quantity Surveyor"},{"gl":"15","post":"Assistant Director (Quantity Surveying)"},{"gl":"16","post":"Deputy Director (Quantity Surveying)"},{"gl":"17","post":"Director (Quantity Surveying)"}]},{"name":"Land Surveying Cadre","levels":[{"gl":"08","post":"Surveyor II"},{"gl":"09","post":"Surveyor I"},{"gl":"10","post":"Senior Surveyor"},{"gl":"12","post":"Principal Surveyor"},{"gl":"13","post":"Assistant Chief Surveyor"},{"gl":"14","post":"Chief Surveyor"},{"gl":"15","post":"Assistant Director (Surveying)"},{"gl":"16","post":"Deputy Director (Surveying)"},{"gl":"17","post":"Director (Surveying)"}]},{"name":"Estate Management Cadre","levels":[{"gl":"08","post":"Estate Officer II"},{"gl":"09","post":"Estate Officer I"},{"gl":"10","post":"Senior Estate Officer"},{"gl":"12","post":"Principal Estate Officer"},{"gl":"13","post":"Assistant Chief Estate Officer"},{"gl":"14","post":"Chief Estate Officer"},{"gl":"15","post":"Assistant Director (Estate Management)"},{"gl":"16","post":"Deputy Director (Estate Management)"},{"gl":"17","post":"Director (Estate Management)"}]},{"name":"Agriculture Cadre","levels":[{"gl":"08","post":"Agricultural Officer II"},{"gl":"09","post":"Agricultural Officer I"},{"gl":"10","post":"Senior Agricultural Officer"},{"gl":"12","post":"Principal Agricultural Officer"},{"gl":"13","post":"Assistant Chief Agricultural Officer"},{"gl":"14","post":"Chief Agricultural Officer"},{"gl":"15","post":"Assistant Director (Agriculture)"},{"gl":"16","post":"Deputy Director (Agriculture)"},{"gl":"17","post":"Director (Agriculture)"}]},{"name":"Fisheries Cadre","levels":[{"gl":"08","post":"Fisheries Officer II"},{"gl":"09","post":"Fisheries Officer I"},{"gl":"10","post":"Senior Fisheries Officer"},{"gl":"12","post":"Principal Fisheries Officer"},{"gl":"13","post":"Assistant Chief Fisheries Officer"},{"gl":"14","post":"Chief Fisheries Officer"},{"gl":"15","post":"Assistant Director (Agriculture)"},{"gl":"16","post":"Deputy Director (Agriculture)"},{"gl":"17","post":"Director (Agriculture)"}]},{"name":"Produce Inspection Cadre","levels":[{"gl":"08","post":"Produce Officer II"},{"gl":"09","post":"Produce Officer I"},{"gl":"10","post":"Senior Produce Officer"},{"gl":"12","post":"Principal Produce Officer"},{"gl":"13","post":"Assistant Chief Produce Officer"},{"gl":"14","post":"Chief Produce Officer"},{"gl":"15","post":"Assistant Director (Agriculture)"},{"gl":"16","post":"Deputy Director (Agriculture)"},{"gl":"17","post":"Director (Agriculture)"}]},{"name":"Veterinary Cadre","levels":[{"gl":"08","post":"Veterinary Officer II"},{"gl":"09","post":"Veterinary Officer I"},{"gl":"10","post":"Senior Veterinary Officer"},{"gl":"12","post":"Principal Veterinary Officer"},{"gl":"13","post":"Assistant Chief Veterinary Officer"},{"gl":"14","post":"Chief Veterinary Officer"},{"gl":"15","post":"Assistant Director (Veterinary Services)"},{"gl":"16","post":"Deputy Director (Veterinary Services)"},{"gl":"17","post":"Director (Veterinary Services)"}]},{"name":"Forestry Cadre","levels":[{"gl":"08","post":"Forestry Officer II"},{"gl":"09","post":"Forestry Officer I"},{"gl":"10","post":"Senior Forestry Officer"},{"gl":"12","post":"Principal Forestry Officer"},{"gl":"13","post":"Assistant Chief Forestry Officer"},{"gl":"14","post":"Chief Forestry Officer"},{"gl":"15","post":"Assistant Director (Forestry)"},{"gl":"16","post":"Deputy Director (Forestry)"},{"gl":"17","post":"Director (Forestry)"}]},{"name":"Geology Cadre","levels":[{"gl":"08","post":"Geologist II"},{"gl":"09","post":"Geologist I"},{"gl":"10","post":"Senior Geologist"},{"gl":"12","post":"Principal Geologist"},{"gl":"13","post":"Assistant Chief Geologist"},{"gl":"14","post":"Chief Geologist"},{"gl":"15","post":"Assistant Director (Geology)"},{"gl":"16","post":"Deputy Director (Geology)"},{"gl":"17","post":"Director (Geology)"}]},{"name":"Scientific Officer (Mining) Cadre","levels":[{"gl":"08","post":"Scientific Officer (Mining) II"},{"gl":"09","post":"Scientific Officer (Mining) I"},{"gl":"10","post":"Senior Scientific Officer (Mining)"},{"gl":"12","post":"Principal Scientific Officer (Mining)"},{"gl":"13","post":"Assistant Chief Scientific Officer (Mining)"},{"gl":"14","post":"Chief Scientific Officer (Mining)"},{"gl":"15","post":"Assistant Director (Science)"},{"gl":"16","post":"Deputy Director (Science)"},{"gl":"17","post":"Director (Science)"}]},{"name":"Scientific Officer (Water) Cadre","levels":[{"gl":"08","post":"Scientific Officer (Water) II"},{"gl":"09","post":"Scientific Officer (Water) I"},{"gl":"10","post":"Senior Scientific Officer (Water)"},{"gl":"12","post":"Principal Scientific Officer (Water)"},{"gl":"13","post":"Assistant Chief Scientific Officer (Water)"},{"gl":"14","post":"Chief Scientific Officer (Water)"},{"gl":"15","post":"Assistant Director (Science)"},{"gl":"16","post":"Deputy Director (Science)"},{"gl":"17","post":"Director (Science)"}]},{"name":"Legal Cadre","levels":[{"gl":"08","post":"State Counsel II"},{"gl":"09","post":"State Counsel I"},{"gl":"10","post":"Senior State Counsel"},{"gl":"12","post":"Principal State Counsel"},{"gl":"13","post":"Assistant Chief State Counsel"},{"gl":"14","post":"Chief State Counsel"},{"gl":"15","post":"Assistant Director (Legal Services)"},{"gl":"16","post":"Deputy Director (Legal Services)"},{"gl":"17","post":"Director (Legal Services)"}]},{"name":"Statistics Cadre (graduate)","levels":[{"gl":"08","post":"Statistician II"},{"gl":"09","post":"Statistician I"},{"gl":"10","post":"Senior Statistician"},{"gl":"12","post":"Principal Statistician"},{"gl":"13","post":"Assistant Chief Statistician"},{"gl":"14","post":"Chief Statistician"},{"gl":"15","post":"Assistant Director (Statistics)"},{"gl":"16","post":"Deputy Director (Statistics)"},{"gl":"17","post":"Director (Statistics)"}]},{"name":"Economic Planning Cadre","levels":[{"gl":"08","post":"Economic Planning Officer II"},{"gl":"09","post":"Economic Planning Officer I"},{"gl":"10","post":"Senior Economic Planning Officer"},{"gl":"12","post":"Principal Economic Planning Officer"},{"gl":"13","post":"Assistant Chief Economic Planning Officer"},{"gl":"14","post":"Chief Economic Planning Officer"},{"gl":"15","post":"Assistant Director (Economic Planning)"},{"gl":"16","post":"Deputy Director (Economic Planning)"},{"gl":"17","post":"Director (Economic Planning)"}]},{"name":"Research Cadre","levels":[{"gl":"08","post":"Research Officer II"},{"gl":"09","post":"Research Officer I"},{"gl":"10","post":"Senior Research Officer"},{"gl":"12","post":"Principal Research Officer"},{"gl":"13","post":"Assistant Chief Research Officer"},{"gl":"14","post":"Chief Research Officer"},{"gl":"15","post":"Assistant Director (Research)"},{"gl":"16","post":"Deputy Director (Research)"},{"gl":"17","post":"Director (Research)"}]},{"name":"Social Welfare Cadre","levels":[{"gl":"08","post":"Social Welfare Officer II"},{"gl":"09","post":"Social Welfare Officer I"},{"gl":"10","post":"Senior Social Welfare Officer"},{"gl":"12","post":"Principal Social Welfare Officer"},{"gl":"13","post":"Assistant Chief Social Welfare Officer"},{"gl":"14","post":"Chief Social Welfare Officer"},{"gl":"15","post":"Assistant Director (Social Welfare)"},{"gl":"16","post":"Deputy Director (Social Welfare)"},{"gl":"17","post":"Director (Social Welfare)"}]},{"name":"Community Development Cadre","levels":[{"gl":"08","post":"Community Development Officer II"},{"gl":"09","post":"Community Development Officer I"},{"gl":"10","post":"Senior Community Development Officer"},{"gl":"12","post":"Principal Community Development Officer"},{"gl":"13","post":"Assistant Chief Community Development Officer"},{"gl":"14","post":"Chief Community Development Officer"},{"gl":"15","post":"Assistant Director (Community Development)"},{"gl":"16","post":"Deputy Director (Community Development)"},{"gl":"17","post":"Director (Community Development)"}]},{"name":"Accountant Cadre (graduate)","levels":[{"gl":"08","post":"Accountant II"},{"gl":"09","post":"Accountant I"},{"gl":"10","post":"Senior Accountant"},{"gl":"12","post":"Principal Accountant"},{"gl":"13","post":"Assistant Chief Accountant"},{"gl":"14","post":"Chief Accountant"},{"gl":"15","post":"Assistant Director (Finance & Accounts)"},{"gl":"16","post":"Deputy Director (Finance & Accounts)"},{"gl":"17","post":"Director (Finance & Accounts)"}]},{"name":"Internal Audit Cadre","levels":[{"gl":"08","post":"Internal Auditor II"},{"gl":"09","post":"Internal Auditor I"},{"gl":"10","post":"Senior Internal Auditor"},{"gl":"12","post":"Principal Internal Auditor"},{"gl":"13","post":"Assistant Chief Internal Auditor"},{"gl":"14","post":"Chief Internal Auditor"},{"gl":"15","post":"Assistant Director (Internal Audit)"},{"gl":"16","post":"Deputy Director (Internal Audit)"},{"gl":"17","post":"Director (Internal Audit)"}]},{"name":"Procurement Cadre","levels":[{"gl":"08","post":"Procurement Officer II"},{"gl":"09","post":"Procurement Officer I"},{"gl":"10","post":"Senior Procurement Officer"},{"gl":"12","post":"Principal Procurement Officer"},{"gl":"13","post":"Assistant Chief Procurement Officer"},{"gl":"14","post":"Chief Procurement Officer"},{"gl":"15","post":"Assistant Director (Procurement)"},{"gl":"16","post":"Deputy Director (Procurement)"},{"gl":"17","post":"Director (Procurement)"}]},{"name":"Information Cadre","levels":[{"gl":"08","post":"Information Officer II"},{"gl":"09","post":"Information Officer I"},{"gl":"10","post":"Senior Information Officer"},{"gl":"12","post":"Principal Information Officer"},{"gl":"13","post":"Assistant Chief Information Officer"},{"gl":"14","post":"Chief Information Officer"},{"gl":"15","post":"Assistant Director (Information)"},{"gl":"16","post":"Deputy Director (Information)"},{"gl":"17","post":"Director (Information)"}]},{"name":"Public Relations Cadre","levels":[{"gl":"08","post":"Public Relations Officer II"},{"gl":"09","post":"Public Relations Officer I"},{"gl":"10","post":"Senior Public Relations Officer"},{"gl":"12","post":"Principal Public Relations Officer"},{"gl":"13","post":"Assistant Chief Public Relations Officer"},{"gl":"14","post":"Chief Public Relations Officer"},{"gl":"15","post":"Assistant Director (Public Relations)"},{"gl":"16","post":"Deputy Director (Public Relations)"},{"gl":"17","post":"Director (Public Relations)"}]},{"name":"Printing Cadre","levels":[{"gl":"08","post":"Printer II"},{"gl":"09","post":"Printer I"},{"gl":"10","post":"Senior Printer"},{"gl":"12","post":"Principal Printer"},{"gl":"13","post":"Assistant Chief Printer"},{"gl":"14","post":"Chief Printer"},{"gl":"15","post":"Assistant Director (Printing)"},{"gl":"16","post":"Deputy Director (Printing)"},{"gl":"17","post":"Director (Printing)"}]},{"name":"Technical Officer (Civil) Cadre","levels":[{"gl":"06","post":"Assistant Technical Officer (Civil)"},{"gl":"07","post":"Technical Officer (Civil)"},{"gl":"08","post":"Higher Technical Officer (Civil)"},{"gl":"09","post":"Senior Technical Officer (Civil)"},{"gl":"10","post":"Principal Technical Officer (Civil) II"},{"gl":"12","post":"Principal Technical Officer (Civil) I"},{"gl":"13","post":"Assistant Chief Technical Officer (Civil)"},{"gl":"14","post":"Chief Technical Officer (Civil)"}]},{"name":"Technical Officer (Mechanical) Cadre","levels":[{"gl":"06","post":"Assistant Technical Officer (Mechanical)"},{"gl":"07","post":"Technical Officer (Mechanical)"},{"gl":"08","post":"Higher Technical Officer (Mechanical)"},{"gl":"09","post":"Senior Technical Officer (Mechanical)"},{"gl":"10","post":"Principal Technical Officer (Mechanical) II"},{"gl":"12","post":"Principal Technical Officer (Mechanical) I"},{"gl":"13","post":"Assistant Chief Technical Officer (Mechanical)"},{"gl":"14","post":"Chief Technical Officer (Mechanical)"}]},{"name":"Technical Officer (Electrical) Cadre","levels":[{"gl":"06","post":"Assistant Technical Officer (Electrical)"},{"gl":"07","post":"Technical Officer (Electrical)"},{"gl":"08","post":"Higher Technical Officer (Electrical)"},{"gl":"09","post":"Senior Technical Officer (Electrical)"},{"gl":"10","post":"Principal Technical Officer (Electrical) II"},{"gl":"12","post":"Principal Technical Officer (Electrical) I"},{"gl":"13","post":"Assistant Chief Technical Officer (Electrical)"},{"gl":"14","post":"Chief Technical Officer (Electrical)"}]},{"name":"Technical Officer (Town Planning) Cadre","levels":[{"gl":"06","post":"Assistant Technical Officer (Town Planning)"},{"gl":"07","post":"Technical Officer (Town Planning)"},{"gl":"08","post":"Higher Technical Officer (Town Planning)"},{"gl":"09","post":"Senior Technical Officer (Town Planning)"},{"gl":"10","post":"Principal Technical Officer (Town Planning) II"},{"gl":"12","post":"Principal Technical Officer (Town Planning) I"},{"gl":"13","post":"Assistant Chief Technical Officer (Town Planning)"},{"gl":"14","post":"Chief Technical Officer (Town Planning)"}]},{"name":"Statistics Cadre (technician)","levels":[{"gl":"06","post":"Assistant Statistical Officer"},{"gl":"07","post":"Statistical Officer"},{"gl":"08","post":"Higher Statistical Officer"},{"gl":"09","post":"Senior Statistical Officer"},{"gl":"10","post":"Principal Statistical Officer II"},{"gl":"12","post":"Principal Statistical Officer I"},{"gl":"13","post":"Assistant Chief Statistical Officer"},{"gl":"14","post":"Chief Statistical Officer"}]}];
+const SEED_QUESTIONS = [
+/* ---------- QUANTITATIVE ---------- */
+{scope:"COMMON",category:"Quantitative",type:"mcq",difficulty:"easy",
+ stem:"A civil servant earns ₦180,000 per month. If 7.5% is deducted for pension, what is the monthly pension contribution?",
+ options:["₦11,500","₦13,500","₦15,000","₦18,000"],answer:1,
+ explanation:"7.5% of ₦180,000 = 0.075 × 180,000 = ₦13,500."},
+{scope:"COMMON",category:"Quantitative",type:"mcq",difficulty:"medium",
+ stem:"A file of 240 pages is shared equally among 8 officers to review. If 3 officers are absent, how many extra pages does each remaining officer review compared with the original plan?",
+ options:["18 pages","12 pages","30 pages","10 pages"],answer:0,
+ explanation:"Original: 240 ÷ 8 = 30 pages each. With 5 present: 240 ÷ 5 = 48 pages each. Extra = 48 − 30 = 18 pages."},
+{scope:"COMMON",category:"Quantitative",type:"mcq",difficulty:"medium",
+ stem:"The ratio of male to female staff in a unit is 5:3. If there are 40 staff in total, how many are female?",
+ options:["25","15","24","12"],answer:1,
+ explanation:"Total ratio parts = 5+3 = 8. Female share = 3/8 × 40 = 15."},
+{scope:"COMMON",category:"Quantitative",type:"shortanswer",difficulty:"easy",
+ stem:"What is 15% of ₦2,000? (Enter the amount in figures only, e.g. 300)",
+ accept:["300","₦300","300.00"],
+ explanation:"15% of 2,000 = 0.15 × 2,000 = 300."},
+{scope:"COMMON",category:"Quantitative",type:"truefalse",difficulty:"easy",
+ stem:"If an item costs ₦4,500 and is sold for ₦5,400, the profit percentage is 20%.",answer:true,
+ explanation:"Profit = 5,400 − 4,500 = 900. Profit % = 900/4,500 × 100 = 20%."},
+{scope:"COMMON",category:"Quantitative",type:"ordering",difficulty:"medium",
+ stem:"Arrange these amounts from SMALLEST to LARGEST.",
+ items:["₦45,000","₦120,500","₦340,000","₦1,050,000"],
+ explanation:"Ordering by value: 45,000 < 120,500 < 340,000 < 1,050,000."},
+
+/* ---------- QUALITATIVE (verbal reasoning) ---------- */
+{scope:"COMMON",category:"Qualitative",type:"mcq",difficulty:"easy",
+ stem:"Choose the word most nearly SIMILAR in meaning to: DILIGENT",
+ options:["Lazy","Hardworking","Careless","Late"],answer:1,
+ explanation:"'Diligent' means showing careful and persistent effort — i.e. hardworking. The others are opposites or unrelated."},
+{scope:"COMMON",category:"Qualitative",type:"mcq",difficulty:"medium",
+ stem:"Choose the word OPPOSITE in meaning to: TRANSPARENT",
+ options:["Clear","Honest","Opaque","Open"],answer:2,
+ explanation:"'Transparent' means see-through/clear; its opposite is 'opaque' (not able to be seen through)."},
+{scope:"COMMON",category:"Qualitative",type:"mcq",difficulty:"medium",
+ stem:"Complete the analogy: Doctor is to Hospital as Teacher is to ___",
+ options:["Student","School","Book","Lesson"],answer:1,
+ explanation:"A doctor works in a hospital; by the same relationship, a teacher works in a school."},
+{scope:"COMMON",category:"Qualitative",type:"mcq",difficulty:"easy",
+ stem:"Pick the ODD one out.",
+ options:["Circular","Memo","Report","Bicycle"],answer:3,
+ explanation:"Circular, memo and report are official written communications; a bicycle is not — it is the odd one out."},
+{scope:"COMMON",category:"Qualitative",type:"shortanswer",difficulty:"medium",
+ stem:"Give a single word that means 'a formal written request signed by many people'.",
+ accept:["petition","a petition"],
+ explanation:"A 'petition' is a formal written request, typically signed by many people, appealing to an authority."},
+{scope:"COMMON",category:"Qualitative",type:"matching",difficulty:"medium",
+ stem:"Match each word to its correct meaning.",
+ pairs:[{l:"Concise",r:"Brief and clear"},{l:"Ambiguous",r:"Having more than one meaning"},
+        {l:"Redundant",r:"No longer needed / repetitive"},{l:"Impartial",r:"Not favouring one side"}],
+ explanation:"Concise = brief and clear; Ambiguous = open to more than one meaning; Redundant = superfluous/repetitive; Impartial = unbiased."},
+
+/* ---------- LOGIC ---------- */
+{scope:"COMMON",category:"Logic",type:"mcq",difficulty:"easy",
+ stem:"Find the next number in the series: 2, 6, 12, 20, 30, ___",
+ options:["36","40","42","44"],answer:2,
+ explanation:"Differences increase by 2 each time: +4, +6, +8, +10, then +12 → 30 + 12 = 42."},
+{scope:"COMMON",category:"Logic",type:"mcq",difficulty:"medium",
+ stem:"If all directors are officers, and some officers are auditors, which statement MUST be true?",
+ options:["All auditors are directors","Some directors are auditors","All directors are officers","No officer is an auditor"],answer:2,
+ explanation:"Only 'all directors are officers' is guaranteed by the premises. The links to auditors are only 'some', so nothing certain follows about directors and auditors."},
+{scope:"COMMON",category:"Logic",type:"mcq",difficulty:"medium",
+ stem:"In a code, OFFICE is written as PGGJDF (each letter moved one step forward). How is FILE written in the same code?",
+ options:["GJMF","EHKD","GKMF","HJMF"],answer:0,
+ explanation:"Shift each letter forward by one: F→G, I→J, L→M, E→F, giving GJMF."},
+{scope:"COMMON",category:"Logic",type:"truefalse",difficulty:"medium",
+ stem:"Facing North and turning 90° clockwise, then 180° more, you now face West.",answer:true,
+ explanation:"North + 90° clockwise = East; East + 180° = West. So you face West."},
+{scope:"COMMON",category:"Logic",type:"ordering",difficulty:"easy",
+ stem:"Arrange the series in the correct ascending pattern (each term is double the previous): put them in order.",
+ items:["3","6","12","24","48"],
+ explanation:"Each term doubles: 3, 6, 12, 24, 48."},
+
+/* ---------- ENGLISH & GRAMMAR ---------- */
+{scope:"COMMON",category:"English and Grammar",type:"mcq",difficulty:"easy",
+ stem:"Choose the correct option: 'Neither the officers nor the director ___ present at the meeting.'",
+ options:["were","was","are","been"],answer:1,
+ explanation:"With 'neither…nor', the verb agrees with the nearer subject. 'The director' is singular, so 'was' is correct."},
+{scope:"COMMON",category:"English and Grammar",type:"mcq",difficulty:"medium",
+ stem:"Choose the correctly spelt word.",
+ options:["Acknowlegement","Acknowledgement","Acknowlegdement","Aknowledgement"],answer:1,
+ explanation:"The correct spelling is 'acknowledgement' (British) — 'acknowledg(e)ment'."},
+{scope:"COMMON",category:"English and Grammar",type:"mcq",difficulty:"medium",
+ stem:"Fill the gap: 'The report was submitted ___ the Permanent Secretary on Monday.'",
+ options:["at","to","in","for"],answer:1,
+ explanation:"You submit something 'to' a person. 'To the Permanent Secretary' is the correct collocation."},
+{scope:"COMMON",category:"English and Grammar",type:"truefalse",difficulty:"easy",
+ stem:"The sentence 'Each of the files have been reviewed' is grammatically correct.",answer:false,
+ explanation:"'Each' is singular, so it takes 'has', not 'have': 'Each of the files has been reviewed.'"},
+{scope:"COMMON",category:"English and Grammar",type:"shortanswer",difficulty:"easy",
+ stem:"Give the plural of the word 'memorandum'.",
+ accept:["memoranda","memorandums"],
+ explanation:"The Latin-derived plural is 'memoranda'; 'memorandums' is also accepted in modern usage."},
+{scope:"COMMON",category:"English and Grammar",type:"matching",difficulty:"medium",
+ stem:"Match each word to its correct part of speech.",
+ pairs:[{l:"Quickly",r:"Adverb"},{l:"Honesty",r:"Noun"},{l:"Approve",r:"Verb"},{l:"Diligent",r:"Adjective"}],
+ explanation:"Quickly = adverb; Honesty = noun; Approve = verb; Diligent = adjective."},
+
+/* ---------- LAGOS STATE CIVIL SERVICE RULES ---------- */
+{scope:"COMMON",category:"Lagos State Civil Service Rules",type:"mcq",difficulty:"medium",
+ stem:"In the Public Service, an officer compulsorily retires on attaining the age of 60 years OR after how many years of pensionable service, whichever is earlier?",
+ options:["30 years","35 years","40 years","25 years"],answer:1,
+ explanation:"The general rule in the Nigerian Public Service (adopted by Lagos State) is retirement at 60 years of age or 35 years of pensionable service, whichever comes first."},
+{scope:"COMMON",category:"Lagos State Civil Service Rules",type:"mcq",difficulty:"medium",
+ stem:"A written demand for an explanation from an officer over an alleged misconduct is called a ___.",
+ options:["Warrant","Query","Circular","Voucher"],answer:1,
+ explanation:"A 'query' is the formal written request for explanation issued to an officer before any disciplinary decision is taken."},
+{scope:"COMMON",category:"Lagos State Civil Service Rules",type:"mcq",difficulty:"hard",
+ stem:"The tool used to assess an officer's yearly work performance in the service is known as ___.",
+ options:["APER form","Nominal roll","Vote book","Imprest sheet"],answer:0,
+ explanation:"APER (Annual Performance Evaluation Report) is the standard instrument for assessing an officer's yearly performance."},
+{scope:"COMMON",category:"Lagos State Civil Service Rules",type:"truefalse",difficulty:"medium",
+ stem:"Interdiction of an officer means the officer's appointment has been permanently terminated.",answer:false,
+ explanation:"Interdiction is a temporary removal from duty (often on part salary) pending investigation — not termination. Permanent removal is 'dismissal'."},
+{scope:"COMMON",category:"Lagos State Civil Service Rules",type:"shortanswer",difficulty:"medium",
+ stem:"What is the usual probationary period (in years) for a newly appointed pensionable officer? (Enter a number)",
+ accept:["2","two"],
+ explanation:"A newly appointed officer to a pensionable post normally serves a probationary period of two (2) years before confirmation."},
+{scope:"COMMON",category:"Lagos State Civil Service Rules",type:"ordering",difficulty:"hard",
+ stem:"Arrange these disciplinary stages in their usual order of severity, from LEAST to MOST severe.",
+ items:["Query","Warning","Suspension","Interdiction","Dismissal"],
+ explanation:"Typical escalation: Query (demand for explanation) → Warning → Suspension → Interdiction → Dismissal (most severe)."},
+
+/* ---------- LAGOS STATE FINANCIAL REGULATIONS ---------- */
+{scope:"COMMON",category:"Lagos State Financial Regulations",type:"mcq",difficulty:"medium",
+ stem:"The transfer of funds from one approved sub-head of a vote to another is known as ___.",
+ options:["Virement","Imprest","Warrant","Surcharge"],answer:0,
+ explanation:"'Virement' is the authorised transfer of savings from one sub-head to another within the same vote, subject to approval."},
+{scope:"COMMON",category:"Lagos State Financial Regulations",type:"mcq",difficulty:"medium",
+ stem:"A fixed sum of money advanced to an officer to meet minor recurring expenses, which is periodically retired and replenished, is called ___.",
+ options:["A grant","An imprest","A subvention","A warrant"],answer:1,
+ explanation:"An 'imprest' is a fixed cash advance for minor/petty expenses, retired and reimbursed periodically."},
+{scope:"COMMON",category:"Lagos State Financial Regulations",type:"mcq",difficulty:"hard",
+ stem:"The book in which an officer records, on a vote-by-vote basis, commitments and expenditure to avoid over-spending, is the ___.",
+ options:["Cash book","Vote book","Ledger","Nominal roll"],answer:1,
+ explanation:"The 'vote book' records commitments and actual expenditure against each vote so that a vote is not exceeded."},
+{scope:"COMMON",category:"Lagos State Financial Regulations",type:"truefalse",difficulty:"medium",
+ stem:"A 'surcharge' is a personal financial liability imposed on an officer for a loss of public funds caused by his negligence.",answer:true,
+ explanation:"A surcharge makes an officer personally liable to make good a loss of public money or stores arising from negligence or misconduct."},
+{scope:"COMMON",category:"Lagos State Financial Regulations",type:"shortanswer",difficulty:"medium",
+ stem:"What single word describes a document authorising the release of funds from the treasury for spending?",
+ accept:["warrant","a warrant"],
+ explanation:"A 'warrant' is the authority issued for the release/expenditure of public funds."},
+{scope:"COMMON",category:"Lagos State Financial Regulations",type:"matching",difficulty:"hard",
+ stem:"Match each financial term to its meaning.",
+ pairs:[{l:"Imprest",r:"Fixed advance for petty expenses"},
+        {l:"Virement",r:"Transfer between sub-heads of a vote"},
+        {l:"Surcharge",r:"Personal liability for a loss"},
+        {l:"Vote book",r:"Record of commitments vs expenditure"}],
+ explanation:"Imprest = petty-cash advance; Virement = transfer between sub-heads; Surcharge = personal liability for loss; Vote book = record of commitments and expenditure."},
+
+/* ---------- CURRENT AFFAIRS (durable civics — refresh regularly) ---------- */
+{scope:"COMMON",category:"Current Affairs",type:"mcq",difficulty:"easy",
+ stem:"What is the capital of Lagos State?",
+ options:["Lagos Island","Ikeja","Badagry","Epe"],answer:1,
+ explanation:"Ikeja is the capital of Lagos State (the state capital moved from Lagos Island to Ikeja)."},
+{scope:"COMMON",category:"Current Affairs",type:"mcq",difficulty:"medium",
+ stem:"How many Local Government Areas (LGAs) does Lagos State have?",
+ options:["16","18","20","22"],answer:2,
+ explanation:"Lagos State is made up of 20 constitutionally recognised Local Government Areas."},
+{scope:"COMMON",category:"Current Affairs",type:"mcq",difficulty:"medium",
+ stem:"Lagos State was created on 27th May in which year?",
+ options:["1963","1967","1976","1991"],answer:1,
+ explanation:"Lagos State was created on 27 May 1967 under the States (Creation and Transitional Provisions) Decree."},
+{scope:"COMMON",category:"Current Affairs",type:"truefalse",difficulty:"easy",
+ stem:"The official slogan of Lagos State is 'Centre of Excellence'.",answer:true,
+ explanation:"Lagos State's long-standing official slogan is 'Centre of Excellence'."},
+{scope:"COMMON",category:"Current Affairs",type:"shortanswer",difficulty:"medium",
+ stem:"How many senatorial districts does Lagos State have? (Enter a number)",
+ accept:["3","three"],
+ explanation:"Lagos State has three (3) senatorial districts: Lagos West, Lagos Central and Lagos East."},
+{scope:"COMMON",category:"Current Affairs",type:"mcq",difficulty:"easy",
+ stem:"Nigeria's Federal Capital Territory (Abuja) formally became the seat of government in ___.",
+ options:["1976","1985","1991","1999"],answer:2,
+ explanation:"The Federal Capital was formally moved from Lagos to Abuja in 1991."}
+];
+/* ============================================================
+   CBT Platform — application logic (single file, offline-capable)
+   Data layer is a thin wrapper over localStorage so each call
+   maps cleanly to a future Google Apps Script endpoint.
+   ============================================================ */
+"use strict";
+
+const CATEGORIES = ["Quantitative","Qualitative","Logic","English and Grammar",
+  "Lagos State Civil Service Rules","Lagos State Financial Regulations","Current Affairs"];
+const TYPES = [
+  {id:"mcq",label:"Multiple choice"},
+  {id:"truefalse",label:"True / False"},
+  {id:"shortanswer",label:"Short answer"},
+  {id:"ordering",label:"Drag & drop ordering"},
+  {id:"matching",label:"Matching pairs"}
+];
+const CAT_COLORS = {"Quantitative":"#0e4d6b","Qualitative":"#2a7d9b","Logic":"#c98a12",
+  "English and Grammar":"#1f7a54","Lagos State Civil Service Rules":"#8a4fa0",
+  "Lagos State Financial Regulations":"#b2603a","Current Affairs":"#3a6ea5"};
+
+/* ---------- helpers ---------- */
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>[...r.querySelectorAll(s)];
+function el(tag,attrs={},...kids){const n=document.createElement(tag);
+  for(const k in attrs){if(k==="class")n.className=attrs[k];
+    else if(k==="html")n.innerHTML=attrs[k];
+    else if(k.startsWith("on")&&typeof attrs[k]==="function")n.addEventListener(k.slice(2),attrs[k]);
+    else if(attrs[k]!=null)n.setAttribute(k,attrs[k]);}
+  kids.flat().forEach(c=>n.append(c?.nodeType?c:document.createTextNode(c)));return n;}
+const uid=p=>(p||"id")+Math.random().toString(36).slice(2,9);
+function hash(s){let h=5381;for(let i=0;i<s.length;i++){h=((h<<5)+h)+s.charCodeAt(i);h|=0}return "h"+(h>>>0).toString(36);}
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+const norm=s=>String(s??"").trim().toLowerCase().replace(/[₦.,]/g,"").replace(/\s+/g," ");
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function toast(msg,kind=""){const t=el("div",{class:"toast "+kind},msg);document.body.append(t);
+  setTimeout(()=>t.remove(),2600);}
+function modal(node){const bg=el("div",{class:"modal-bg",onclick:e=>{if(e.target===bg)bg.remove();}});
+  const m=el("div",{class:"modal"});m.append(node);bg.append(m);$("#modalMount").append(bg);
+  return{close:()=>bg.remove()};}
+
+/* ---------- DB ---------- */
+const DB={
+  k:{acc:"cbt_accounts",usr:"cbt_users",q:"cbt_questions",att:"cbt_attempts",cfg:"cbt_config",ses:"cbt_session"},
+  _r(k,d){try{return JSON.parse(localStorage.getItem(k))??d;}catch{return d;}},
+  _w(k,v){localStorage.setItem(k,JSON.stringify(v));},
+  accounts(){return this._r(this.k.acc,[]);}, saveAccounts(a){this._w(this.k.acc,a);},
+  users(){return this._r(this.k.usr,[]);}, saveUsers(u){this._w(this.k.usr,u);},
+  questions(){return this._r(this.k.q,[]);}, saveQuestions(q){this._w(this.k.q,q);},
+  attempts(){return this._r(this.k.att,[]);}, saveAttempts(a){this._w(this.k.att,a);},
+  config(){return this._r(this.k.cfg,{});}, saveConfig(c){this._w(this.k.cfg,{...this.config(),...c});},
+  session(){return this._r(this.k.ses,null);}, setSession(s){s?this._w(this.k.ses,s):localStorage.removeItem(this.k.ses);},
+  seed(){
+    const cfg=this.config();
+    if(!cfg.seeded){
+      const accs=this.accounts();
+      if(!accs.some(a=>a.role==="super")){
+        accs.push({id:uid("acc"),role:"super",username:"superadmin",
+          passHash:hash("changeme123"),name:"System Super Admin",createdAt:Date.now(),mustChange:true});
+        this.saveAccounts(accs);
+      }
+      const qs=this.questions();
+      if(qs.length===0){
+        this.saveQuestions(SEED_QUESTIONS.map(q=>({id:uid("q"),...q})));
+      }
+      this.saveConfig({seeded:true,examLength:20,durationMins:30,
+        aiEndpoint:"https://api.anthropic.com/v1/messages",aiModel:"claude-sonnet-4-6",aiKey:""});
+    }
+  }
+};
+
+/* ---------- session / current actor ---------- */
+let SESSION=null; // {kind:'staff'|'user', id, role}
+function currentActor(){
+  const s=DB.session(); if(!s)return null;
+  if(s.kind==="staff"){const a=DB.accounts().find(x=>x.id===s.id);return a?{...a,kind:"staff"}:null;}
+  const u=DB.users().find(x=>x.id===s.id);return u?{...u,role:"user",kind:"user"}:null;
+}
+
+/* ---------- AUTH SCREEN ---------- */
+function renderAuth(){
+  $("#app").classList.add("hidden");
+  const wrap=$("#auth");wrap.innerHTML="";
+  const uname=el("input",{type:"text",id:"li_u",autocomplete:"username",placeholder:"e.g. superadmin"});
+  const pass=el("input",{type:"password",id:"li_p",autocomplete:"current-password",placeholder:"Your password"});
+  const doLogin=()=>{
+    const u=uname.value.trim(), p=pass.value;
+    if(!u||!p){toast("Enter your username and password","err");return;}
+    const acc=DB.accounts().find(a=>a.username.toLowerCase()===u.toLowerCase());
+    const usr=DB.users().find(a=>a.username.toLowerCase()===u.toLowerCase());
+    const found=acc||usr;
+    if(!found||found.passHash!==hash(p)){toast("Incorrect username or password","err");return;}
+    DB.setSession({kind:acc?"staff":"user",id:found.id});
+    boot();
+  };
+  pass.addEventListener("keydown",e=>{if(e.key==="Enter")doLogin();});
+  const card=el("div",{class:"auth-card"},
+    el("div",{class:"auth-brand"},el("span",{class:"mark"},"CBT"),el("span",{class:"t"},"CBT Platform")),
+    el("div",{class:"auth-sub"},"Lagos State Civil Service — promotion examination practice"),
+    el("div",{class:"field"},el("label",{},"Username"),uname),
+    el("div",{class:"field"},el("label",{},"Password"),pass),
+    el("button",{class:"btn",style:"width:100%;margin-top:.4rem",onclick:doLogin},"Log in")
+  );
+  const accs=DB.accounts();
+  if(accs.length===1&&accs[0].mustChange){
+    card.append(el("div",{class:"notice",style:"margin-top:1.1rem"},
+      "First-time setup — log in as ",el("b",{},"superadmin")," / ",el("b",{},"changeme123"),
+      ", then create your admins and change this password."));
+  }
+  wrap.append(el("div",{class:"auth-wrap"},card));
+}
+
+/* ---------- APP SHELL ---------- */
+function boot(){
+  const actor=currentActor();
+  if(!actor){renderAuth();return;}
+  SESSION=actor;
+  $("#auth").innerHTML="";
+  $("#app").classList.remove("hidden");
+  const roleLabel={super:"Super Admin",admin:"Admin",user:"Candidate"}[actor.role];
+  $("#whoami").innerHTML=`<b>${esc(actor.name||actor.username)}</b>${roleLabel}`;
+  $("#logoutBtn").onclick=()=>{DB.setSession(null);SESSION=null;renderAuth();};
+  if(actor.role==="user")renderCandidate();
+  else renderStaff();
+}
+/* ============================================================
+   CANDIDATE SIDE
+   ============================================================ */
+function freshUser(){return DB.users().find(u=>u.id===SESSION.id);}
+function userPool(cadre){return DB.questions().filter(q=>q.scope==="COMMON"||q.scope===cadre);}
+function userAttempts(uid){return DB.attempts().filter(a=>a.userId===uid).sort((a,b)=>a.startedAt-b.startedAt);}
+
+function renderCandidate(){
+  const u=freshUser();
+  if(!u.cadre||!u.cadreLocked)return renderCadreSelect();
+  renderCandidateHome("overview");
+}
+
+function renderCadreSelect(){
+  const view=$("#view");view.innerHTML="";
+  const catSel=el("select",{id:"cadreSel"},
+    el("option",{value:""},"— Choose your cadre —"),
+    ...CADRES.map(c=>el("option",{value:c.name},c.name)));
+  const postWrap=el("div",{class:"field hidden",id:"postWrap"});
+  const confirmBtn=el("button",{class:"btn",disabled:"",id:"cadreConfirm"},"Lock in this cadre & continue");
+  let chosen=null,chosenPost=null;
+  catSel.onchange=()=>{
+    chosen=CADRES.find(c=>c.name===catSel.value);chosenPost=null;confirmBtn.disabled=true;
+    postWrap.innerHTML="";postWrap.classList.add("hidden");
+    if(!chosen)return;
+    const posts=el("select",{id:"postSel"},el("option",{value:""},"— Select your grade / target post —"),
+      ...chosen.levels.map(l=>el("option",{value:l.post},`GL ${l.gl} — ${l.post}`)));
+    posts.onchange=()=>{chosenPost=posts.value;confirmBtn.disabled=!chosenPost;};
+    postWrap.append(el("label",{},"Grade level & post"),posts);
+    postWrap.classList.remove("hidden");
+  };
+  confirmBtn.onclick=()=>{
+    if(!chosen||!chosenPost)return;
+    const m=modal(el("div",{},
+      el("h3",{},"Confirm your cadre"),
+      el("p",{},"You are choosing "),
+      el("div",{class:"kv"},el("span",{},"Cadre"),el("b",{},chosen.name)),
+      el("div",{class:"kv"},el("span",{},"Target post"),el("b",{},chosenPost)),
+      el("p",{class:"notice",style:"margin-top:1rem"},
+        "Once locked, your cadre cannot be changed from your account. Only an administrator can reset it."),
+      el("div",{class:"row",style:"margin-top:1rem"},
+        el("button",{class:"btn sec",onclick:()=>m.close()},"Go back"),
+        el("button",{class:"btn warn",onclick:()=>{
+          const users=DB.users();const idx=users.findIndex(x=>x.id===SESSION.id);
+          users[idx].cadre=chosen.name;users[idx].targetPost=chosenPost;users[idx].cadreLocked=true;
+          DB.saveUsers(users);m.close();toast("Cadre locked. Welcome aboard.","ok");renderCandidate();
+        }},"Yes, lock it in"))
+    ));
+  };
+  view.append(
+    el("div",{class:"card"},
+      el("h1",{},"Select your cadre"),
+      el("p",{style:"color:var(--muted)"},"Your practice questions are prepared for the cadre you are seeking promotion within. Choose carefully — this selection is locked to your account once confirmed."),
+      el("div",{class:"field"},el("label",{},"Cadre"),catSel),
+      postWrap,
+      el("div",{style:"margin-top:.4rem"},confirmBtn)
+    )
+  );
+}
+
+function candidateHeader(u){
+  const used=userAttempts(u.id).length, allo=u.attemptsAllocated||0;
+  const pct=allo>0?Math.min(100,Math.round(used/allo*100)):0;
+  return el("div",{class:"card"},
+    el("div",{class:"row",style:"align-items:flex-start"},
+      el("div",{style:"flex:2"},
+        el("h1",{style:"margin-bottom:.2rem"},u.cadre),
+        el("div",{style:"color:var(--muted)"},"Target: "+esc(u.targetPost||"—")),
+        el("div",{style:"margin-top:.3rem"},el("span",{class:"badge lock"},"🔒 Cadre locked"))),
+      el("div",{style:"flex:1;min-width:220px"},
+        el("div",{style:"display:flex;justify-content:space-between;font-size:.88rem;margin-bottom:.3rem"},
+          el("span",{style:"color:var(--muted)"},"Practice attempts used"),
+          el("b",{},`${used} / ${allo}`)),
+        el("div",{class:"progress"},el("div",{class:"fill",style:`width:${pct}%`})),
+        el("div",{style:"font-size:.82rem;color:var(--muted);margin-top:.35rem"},
+          allo-used>0?`${allo-used} attempt(s) remaining`:"No attempts remaining — ask your administrator to allocate more"))
+    ));
+}
+
+function renderCandidateHome(tab){
+  const u=freshUser();const view=$("#view");view.innerHTML="";
+  view.append(candidateHeader(u));
+  const tabs=el("div",{class:"tabs"},
+    ...[["overview","My progress"],["practice","Practice"],["history","History"]].map(([id,lab])=>
+      el("button",{class:"tab"+(tab===id?" active":""),onclick:()=>renderCandidateHome(id)},lab)));
+  view.append(tabs);
+  const body=el("div");view.append(body);
+  if(tab==="overview")body.append(candidateOverview(u));
+  else if(tab==="practice")body.append(candidatePractice(u));
+  else body.append(candidateHistory(u));
+}
+
+function candidatePractice(u){
+  const pool=userPool(u.cadre);
+  const cfg=DB.config();
+  const len=Math.min(cfg.examLength||20,pool.length);
+  const remaining=(u.attemptsAllocated||0)-userAttempts(u.id).length;
+  const canStart=remaining>0&&len>0;
+  const c=el("div",{class:"card"},
+    el("h2",{},"Start a practice session"),
+    el("p",{},`Each session presents ${len} question(s) drawn from your cadre's bank, spanning all subject areas. You have ${Math.max(0,remaining)} attempt(s) left.`),
+    el("div",{class:"grid cols3",style:"margin:1rem 0"},
+      el("div",{class:"stat"},el("div",{class:"n"},len),el("div",{class:"l"},"Questions")),
+      el("div",{class:"stat"},el("div",{class:"n"},(cfg.durationMins||30)+"m"),el("div",{class:"l"},"Time limit")),
+      el("div",{class:"stat"},el("div",{class:"n"},pool.length),el("div",{class:"l"},"In your bank"))),
+    el("button",{class:"btn",disabled:canStart?null:"",onclick:()=>startExam(u)},
+      canStart?"Begin practice session":"Cannot start yet")
+  );
+  if(pool.length===0)c.append(el("div",{class:"notice"},"Your question bank is empty. Ask your administrator to add questions."));
+  else if(remaining<=0)c.append(el("div",{class:"notice"},"You have used all allocated attempts. Your administrator can allocate more."));
+  return c;
+}
+
+/* ---------- EXAM ENGINE ---------- */
+let EXAM=null;
+function startExam(u){
+  const cfg=DB.config();
+  const pool=shuffle(userPool(u.cadre));
+  const len=Math.min(cfg.examLength||20,pool.length);
+  const picked=pool.slice(0,len).map(q=>{
+    const m={id:q.id,category:q.category,type:q.type,stem:q.stem,explanation:q.explanation,difficulty:q.difficulty};
+    if(q.type==="mcq"){m.options=q.options;m.answer=q.answer;}
+    else if(q.type==="truefalse"){m.answer=q.answer;}
+    else if(q.type==="shortanswer"){m.accept=q.accept;}
+    else if(q.type==="ordering"){m.items=q.items;m.display=shuffle(q.items);}
+    else if(q.type==="matching"){m.pairs=q.pairs;m.rights=shuffle(q.pairs.map(p=>p.r));}
+    return m;
+  });
+  EXAM={user:u,cadre:u.cadre,questions:picked,responses:{},idx:0,
+    startedAt:Date.now(),durationMins:cfg.durationMins||30,deadline:Date.now()+(cfg.durationMins||30)*60000};
+  // init ordering responses to displayed order
+  picked.forEach(q=>{if(q.type==="ordering")EXAM.responses[q.id]=q.display.slice();
+    if(q.type==="matching")EXAM.responses[q.id]={};});
+  renderExam();
+}
+
+function renderExam(){
+  const view=$("#view");view.innerHTML="";
+  const q=EXAM.questions[EXAM.idx];
+  const total=EXAM.questions.length;
+  const answeredCount=EXAM.questions.filter(x=>isAnswered(x)).length;
+  const timer=el("span",{class:"timer",id:"examTimer"},"—");
+  const head=el("div",{class:"exam-head"},
+    el("div",{style:"flex:1"},
+      el("div",{style:"font-weight:700;font-size:1.05rem"},`Question ${EXAM.idx+1} of ${total}`),
+      el("div",{style:"color:var(--muted);font-size:.9rem"},q.category+" · "+(TYPES.find(t=>t.id===q.type)?.label||q.type))),
+    timer);
+  const palette=el("div",{class:"qpalette"},
+    ...EXAM.questions.map((x,i)=>el("button",{
+      class:"qdot"+(isAnswered(x)?" answered":"")+(i===EXAM.idx?" current":""),
+      onclick:()=>{EXAM.idx=i;renderExam();}},i+1)));
+  const qBox=el("div",{class:"card"},el("div",{class:"qstem"},q.stem),renderQuestionInput(q));
+  const nav=el("div",{class:"row",style:"margin-top:.5rem"},
+    el("button",{class:"btn sec",disabled:EXAM.idx===0?"":null,onclick:()=>{EXAM.idx--;renderExam();}},"‹ Previous"),
+    EXAM.idx<total-1
+      ? el("button",{class:"btn",onclick:()=>{EXAM.idx++;renderExam();}},"Next ›")
+      : el("button",{class:"btn warn",onclick:()=>confirmSubmit()},"Submit session"));
+  const progress=el("div",{class:"progress",style:"margin-bottom:1rem"},
+    el("div",{class:"fill",style:`width:${Math.round(answeredCount/total*100)}%`}));
+  view.append(el("div",{class:"card"},head,palette),progress,qBox,nav,
+    el("div",{style:"text-align:center;margin-top:1rem"},
+      el("button",{class:"btn danger sm",onclick:()=>confirmSubmit()},"Submit & see my results")));
+  tickTimer();
+}
+let timerHandle=null;
+function tickTimer(){
+  if(timerHandle)clearInterval(timerHandle);
+  const upd=()=>{const t=$("#examTimer");if(!t||!EXAM)return;
+    let left=Math.max(0,Math.floor((EXAM.deadline-Date.now())/1000));
+    const m=String(Math.floor(left/60)).padStart(2,"0"),s=String(left%60).padStart(2,"0");
+    t.textContent=`${m}:${s}`;t.classList.toggle("low",left<=60);
+    if(left<=0){clearInterval(timerHandle);toast("Time is up — submitting","err");gradeAndReview();}};
+  upd();timerHandle=setInterval(upd,1000);
+}
+function isAnswered(q){
+  const r=EXAM.responses[q.id];
+  if(q.type==="mcq")return typeof r==="number";
+  if(q.type==="truefalse")return typeof r==="boolean";
+  if(q.type==="shortanswer")return r&&r.trim().length>0;
+  if(q.type==="ordering")return Array.isArray(r);
+  if(q.type==="matching")return r&&Object.keys(r).length===q.pairs.length;
+  return false;
+}
+function renderQuestionInput(q){
+  const r=EXAM.responses[q.id];
+  if(q.type==="mcq"){
+    return el("div",{},...q.options.map((o,i)=>
+      el("button",{class:"opt"+(r===i?" sel":""),onclick:()=>{EXAM.responses[q.id]=i;renderExam();}},o)));
+  }
+  if(q.type==="truefalse"){
+    return el("div",{},[["True",true],["False",false]].map(([lab,val])=>
+      el("button",{class:"opt"+(r===val?" sel":""),onclick:()=>{EXAM.responses[q.id]=val;renderExam();}},lab)));
+  }
+  if(q.type==="shortanswer"){
+    const inp=el("input",{type:"text",placeholder:"Type your answer",value:r||""});
+    inp.oninput=()=>{EXAM.responses[q.id]=inp.value;};
+    return el("div",{},inp,el("div",{class:"hint",style:"margin-top:.4rem;color:var(--muted)"},"Spelling and spacing are flexible; give the key word or figure."));
+  }
+  if(q.type==="ordering"){
+    const list=el("ul",{class:"dnd"});
+    const order=EXAM.responses[q.id]||q.display.slice();
+    EXAM.responses[q.id]=order;
+    order.forEach((item,i)=>{
+      const li=el("li",{draggable:"true","data-i":i},
+        el("span",{class:"num"},i+1),el("span",{style:"flex:1"},item),
+        el("span",{class:"updown"},
+          el("button",{class:"btn sec sm",disabled:i===0?"":null,onclick:()=>{move(q.id,i,i-1);}},"↑"),
+          el("button",{class:"btn sec sm",disabled:i===order.length-1?"":null,onclick:()=>{move(q.id,i,i+1);}},"↓")));
+      li.addEventListener("dragstart",e=>{li.classList.add("dragging");e.dataTransfer.setData("text",i);});
+      li.addEventListener("dragend",()=>li.classList.remove("dragging"));
+      li.addEventListener("dragover",e=>e.preventDefault());
+      li.addEventListener("drop",e=>{e.preventDefault();const from=+e.dataTransfer.getData("text");move(q.id,from,i);});
+      list.append(li);
+    });
+    return el("div",{},el("div",{class:"hint",style:"margin-bottom:.5rem;color:var(--muted)"},"Drag to reorder, or use the arrows."),list);
+  }
+  if(q.type==="matching"){
+    EXAM.responses[q.id]=EXAM.responses[q.id]||{};
+    return el("div",{},...q.pairs.map((p,i)=>{
+      const sel=el("select",{},el("option",{value:""},"— choose —"),
+        ...q.rights.map(r2=>el("option",{value:r2,selected:EXAM.responses[q.id][p.l]===r2?"":null},r2)));
+      sel.onchange=()=>{EXAM.responses[q.id][p.l]=sel.value;};
+      if(EXAM.responses[q.id][p.l])sel.value=EXAM.responses[q.id][p.l];
+      return el("div",{class:"match-row"},el("div",{class:"left"},p.l),sel);
+    }));
+  }
+}
+function move(qid,from,to){const arr=EXAM.responses[qid];if(to<0||to>=arr.length)return;
+  const[x]=arr.splice(from,1);arr.splice(to,0,x);renderExam();}
+
+function confirmSubmit(){
+  const un=EXAM.questions.filter(x=>!isAnswered(x)).length;
+  const m=modal(el("div",{},
+    el("h3",{},"Submit this session?"),
+    el("p",{},un>0?`You have ${un} unanswered question(s). Unanswered questions are marked wrong.`:"All questions answered. Ready to submit?"),
+    el("div",{class:"row",style:"margin-top:1rem"},
+      el("button",{class:"btn sec",onclick:()=>m.close()},"Keep working"),
+      el("button",{class:"btn warn",onclick:()=>{m.close();gradeAndReview();}},"Submit now"))));
+}
+function gradeQuestion(q){
+  const r=EXAM.responses[q.id];
+  if(q.type==="mcq")return r===q.answer;
+  if(q.type==="truefalse")return r===q.answer;
+  if(q.type==="shortanswer")return !!r&&q.accept.map(norm).includes(norm(r));
+  if(q.type==="ordering")return Array.isArray(r)&&JSON.stringify(r)===JSON.stringify(q.items);
+  if(q.type==="matching")return r&&q.pairs.every(p=>r[p.l]===p.r);
+  return false;
+}
+function gradeAndReview(){
+  if(timerHandle)clearInterval(timerHandle);
+  const per=EXAM.questions.map(q=>({qid:q.id,category:q.category,type:q.type,correct:gradeQuestion(q),
+    given:EXAM.responses[q.id],stem:q.stem,explanation:q.explanation,
+    answerKey:answerKeyText(q)}));
+  const score=per.filter(p=>p.correct).length,total=per.length;
+  const attempt={id:uid("att"),userId:EXAM.user.id,cadre:EXAM.cadre,startedAt:EXAM.startedAt,
+    endedAt:Date.now(),score,total,pct:Math.round(score/total*100),per};
+  const all=DB.attempts();all.push(attempt);DB.saveAttempts(all);
+  EXAM=null;renderReview(attempt,true);
+}
+function answerKeyText(q){
+  if(q.type==="mcq")return q.options[q.answer];
+  if(q.type==="truefalse")return q.answer?"True":"False";
+  if(q.type==="shortanswer")return q.accept[0];
+  if(q.type==="ordering")return q.items.join("  →  ");
+  if(q.type==="matching")return q.pairs.map(p=>`${p.l} = ${p.r}`).join("; ");
+  return "";
+}
+function givenText(p){
+  const g=p.given;
+  if(p.type==="ordering")return Array.isArray(g)?g.join("  →  "):"(no answer)";
+  if(p.type==="matching")return g&&Object.keys(g).length?Object.entries(g).map(([l,r])=>`${l} = ${r||"?"}`).join("; "):"(no answer)";
+  if(p.type==="truefalse")return typeof g==="boolean"?(g?"True":"False"):"(no answer)";
+  if(p.type==="mcq")return typeof g==="number"?String.fromCharCode(65+g):"(no answer)";
+  return g&&String(g).trim()?g:"(no answer)";
+}
+
+function renderReview(att,justFinished){
+  const view=$("#view");view.innerHTML="";
+  const pass=att.pct>=50;
+  view.append(el("div",{class:"card"},
+    el("h1",{},justFinished?"Session complete":"Session review"),
+    el("div",{class:"grid cols4",style:"margin:1rem 0"},
+      el("div",{class:"stat"},el("div",{class:"n"},att.pct+"%"),el("div",{class:"l"},"Score")),
+      el("div",{class:"stat"},el("div",{class:"n"},att.score+"/"+att.total),el("div",{class:"l"},"Correct")),
+      el("div",{class:"stat"},el("div",{class:"n",style:pass?"color:var(--success)":"color:var(--danger)"},pass?"Pass":"Below 50%"),el("div",{class:"l"},"Outcome")),
+      el("div",{class:"stat"},el("div",{class:"n"},Math.round((att.endedAt-att.startedAt)/60000)+"m"),el("div",{class:"l"},"Time taken"))),
+    el("p",{style:"color:var(--muted)"},"Every question you missed is explained below so you can learn from it."),
+    el("button",{class:"btn sec",onclick:()=>renderCandidateHome("overview")},"Back to my dashboard")));
+  const wrong=att.per.filter(p=>!p.correct), right=att.per.filter(p=>p.correct);
+  if(wrong.length){
+    view.append(el("h2",{style:"margin:1.4rem 0 .6rem"},`Questions to review (${wrong.length})`));
+    wrong.forEach((p,i)=>view.append(reviewCard(p,i+1,true)));
+  }
+  if(right.length){
+    view.append(el("h2",{style:"margin:1.4rem 0 .6rem"},`Answered correctly (${right.length})`));
+    right.forEach((p,i)=>view.append(reviewCard(p,i+1,false)));
+  }
+}
+function reviewCard(p,n,showExplain){
+  const card=el("div",{class:"review-q "+(p.correct?"correct":"wrong")},
+    el("div",{style:"display:flex;justify-content:space-between;gap:1rem"},
+      el("div",{style:"font-weight:600"},`${n}. ${p.stem}`),
+      el("span",{class:"badge "+(p.correct?"ok":"bad")},p.correct?"Correct":"Missed")),
+    el("div",{style:"margin-top:.7rem;font-size:.94rem"},
+      el("div",{class:"kv"},el("span",{},"Your answer"),el("b",{style:p.correct?"color:var(--success)":"color:var(--danger)"},givenText(p))),
+      el("div",{class:"kv"},el("span",{},"Correct answer"),el("b",{},p.answerKey))));
+  if(!p.correct||showExplain)
+    card.append(el("div",{class:"explain"},el("b",{},"Why: "),p.explanation||"—"));
+  return card;
+}
+
+function candidateHistory(u){
+  const atts=userAttempts(u.id).slice().reverse();
+  if(!atts.length)return el("div",{class:"card"},el("div",{class:"empty"},"No sessions yet. Head to the Practice tab to begin."));
+  return el("div",{class:"card"},el("h2",{},"Your sessions"),
+    el("div",{class:"table-wrap"},el("table",{},
+      el("thead",{},el("tr",{},el("th",{},"Date"),el("th",{},"Score"),el("th",{},"Correct"),el("th",{},"Outcome"),el("th",{},""))),
+      el("tbody",{},...atts.map(a=>el("tr",{},
+        el("td",{},new Date(a.startedAt).toLocaleString()),
+        el("td",{},el("b",{},a.pct+"%")),
+        el("td",{},a.score+"/"+a.total),
+        el("td",{},el("span",{class:"badge "+(a.pct>=50?"ok":"bad")},a.pct>=50?"Pass":"Below 50%")),
+        el("td",{},el("button",{class:"btn sec sm",onclick:()=>renderReview(a,false)},"Review"))))))));
+}
+
+/* ---------- ANALYTICS (shared) ---------- */
+function categoryStats(attempts){
+  const acc={};CATEGORIES.forEach(c=>acc[c]={correct:0,total:0});
+  attempts.forEach(a=>a.per.forEach(p=>{if(!acc[p.category])acc[p.category]={correct:0,total:0};
+    acc[p.category].total++;if(p.correct)acc[p.category].correct++;}));
+  return acc;
+}
+function catBars(acc){
+  const items=CATEGORIES.filter(c=>acc[c]&&acc[c].total>0).map(c=>{
+    const pct=Math.round(acc[c].correct/acc[c].total*100);
+    return el("div",{class:"item"},
+      el("div",{class:"lab"},c),
+      el("div",{class:"track"},el("div",{class:"bar",style:`width:${pct}%;background:${CAT_COLORS[c]||"#0e4d6b"}`})),
+      el("div",{class:"pct"},pct+"%"));
+  });
+  return items.length?el("div",{class:"catbar"},...items):el("div",{class:"empty"},"No data yet.");
+}
+function trendSVG(attempts){
+  const pts=attempts.map(a=>a.pct);if(pts.length<1)return el("div",{class:"empty"},"No sessions yet.");
+  const W=520,H=160,pad=28;const n=pts.length;
+  const x=i=>n===1?W/2:pad+i*(W-2*pad)/(n-1);const y=v=>H-pad-(v/100)*(H-2*pad);
+  const path=pts.map((v,i)=>`${i?"L":"M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+  const ns="http://www.w3.org/2000/svg";
+  const svg=document.createElementNS(ns,"svg");svg.setAttribute("viewBox",`0 0 ${W} ${H}`);svg.setAttribute("width","100%");
+  [0,50,100].forEach(g=>{const ln=document.createElementNS(ns,"line");
+    ln.setAttribute("x1",pad);ln.setAttribute("x2",W-pad);ln.setAttribute("y1",y(g));ln.setAttribute("y2",y(g));
+    ln.setAttribute("stroke",g===50?"#c9d3da":"#e8edf1");ln.setAttribute("stroke-dasharray",g===50?"4 4":"");svg.append(ln);
+    const tx=document.createElementNS(ns,"text");tx.setAttribute("x",4);tx.setAttribute("y",y(g)+4);
+    tx.setAttribute("font-size","10");tx.setAttribute("fill","#5b6b78");tx.textContent=g;svg.append(tx);});
+  const pth=document.createElementNS(ns,"path");pth.setAttribute("d",path);pth.setAttribute("fill","none");
+  pth.setAttribute("stroke","#0e4d6b");pth.setAttribute("stroke-width","2.5");svg.append(pth);
+  pts.forEach((v,i)=>{const c=document.createElementNS(ns,"circle");c.setAttribute("cx",x(i));c.setAttribute("cy",y(v));
+    c.setAttribute("r","4");c.setAttribute("fill",v>=50?"#1f7a54":"#b23a3a");svg.append(c);});
+  return svg;
+}
+function candidateOverview(u){
+  const atts=userAttempts(u.id);
+  if(!atts.length)return el("div",{class:"card"},el("div",{class:"empty"},
+    el("p",{},"No results yet."),el("button",{class:"btn",onclick:()=>renderCandidateHome("practice")},"Start your first session")));
+  const avg=Math.round(atts.reduce((s,a)=>s+a.pct,0)/atts.length);
+  const best=Math.max(...atts.map(a=>a.pct));
+  const acc=categoryStats(atts);
+  const withData=CATEGORIES.filter(c=>acc[c].total>0);
+  const weakest=withData.slice().sort((a,b)=>(acc[a].correct/acc[a].total)-(acc[b].correct/acc[b].total))[0];
+  const wrap=el("div",{});
+  wrap.append(el("div",{class:"grid cols3"},
+    el("div",{class:"card stat"},el("div",{class:"n"},atts.length),el("div",{class:"l"},"Sessions completed")),
+    el("div",{class:"card stat"},el("div",{class:"n"},avg+"%"),el("div",{class:"l"},"Average score")),
+    el("div",{class:"card stat"},el("div",{class:"n"},best+"%"),el("div",{class:"l"},"Best score"))));
+  if(weakest){
+    const wp=Math.round(acc[weakest].correct/acc[weakest].total*100);
+    wrap.append(el("div",{class:"notice"},el("b",{},"Focus area: "),
+      `Your weakest subject is ${weakest} (${wp}% correct). Target this area in your next sessions to lift your overall score.`));
+  }
+  wrap.append(el("div",{class:"card"},el("h2",{},"Accuracy by subject"),catBars(acc)));
+  wrap.append(el("div",{class:"card"},el("h2",{},"Score trend"),
+    el("p",{style:"color:var(--muted);font-size:.9rem;margin-top:-.3rem"},"Each point is one session, oldest to newest. The dashed line is the 50% pass mark."),
+    trendSVG(atts)));
+  return wrap;
+}
+/* ============================================================
+   STAFF SIDE (Super Admin + Admin)
+   ============================================================ */
+function renderStaff(tab){
+  const actor=currentActor();
+  const isSuper=actor.role==="super";
+  const view=$("#view");view.innerHTML="";
+  const tabDefs=[
+    ...(isSuper?[["admins","Admins"]]:[]),
+    ["users","Candidates"],["bank","Question bank"],["analytics","Analytics"],["settings","Settings"]];
+  if(!tab)tab=tabDefs[0][0];
+  view.append(el("div",{class:"card",style:"margin-bottom:.8rem"},
+    el("div",{class:"row",style:"align-items:center"},
+      el("div",{style:"flex:1"},
+        el("h1",{style:"margin-bottom:.15rem"},isSuper?"Super Admin console":"Admin console"),
+        el("div",{style:"color:var(--muted)"},"Signed in as "+esc(actor.name||actor.username))),
+      el("span",{class:"badge role-"+actor.role},isSuper?"Super Admin":"Admin"))));
+  const tabs=el("div",{class:"tabs"},...tabDefs.map(([id,lab])=>
+    el("button",{class:"tab"+(tab===id?" active":""),onclick:()=>renderStaff(id)},lab)));
+  view.append(tabs);const body=el("div");view.append(body);
+  ({admins:staffAdmins,users:staffUsers,bank:staffBank,analytics:staffAnalytics,settings:staffSettings}[tab])(body,actor);
+}
+
+/* ---------- Admins (super only) ---------- */
+function staffAdmins(body){
+  const admins=DB.accounts().filter(a=>a.role==="admin");
+  body.append(el("div",{class:"card"},el("h2",{},"Create an admin"),
+    el("p",{style:"color:var(--muted);margin-top:-.4rem"},"Admins create and manage candidates and the question bank."),
+    formGrid([
+      ["Full name","adm_name","text","e.g. Adebayo Johnson"],
+      ["Username","adm_user","text","e.g. admin.ikeja"],
+      ["Password","adm_pass","text","Give the admin a temporary password"]]),
+    el("button",{class:"btn",onclick:()=>{
+      const name=$("#adm_name").value.trim(),u=$("#adm_user").value.trim(),p=$("#adm_pass").value;
+      if(!name||!u||!p)return toast("Fill all fields","err");
+      if(existsUsername(u))return toast("That username is taken","err");
+      const accs=DB.accounts();accs.push({id:uid("acc"),role:"admin",username:u,passHash:hash(p),name,createdAt:Date.now()});
+      DB.saveAccounts(accs);toast("Admin created","ok");renderStaff("admins");
+    }},"Create admin")));
+  body.append(el("div",{class:"card"},el("h2",{},`Admins (${admins.length})`),
+    admins.length?el("div",{class:"table-wrap"},el("table",{},
+      el("thead",{},el("tr",{},el("th",{},"Name"),el("th",{},"Username"),el("th",{},"Candidates"),el("th",{},"Created"),el("th",{},""))),
+      el("tbody",{},...admins.map(a=>{
+        const count=DB.users().filter(u=>u.createdBy===a.id).length;
+        return el("tr",{},el("td",{},a.name),el("td",{},a.username),el("td",{},count),
+          el("td",{},new Date(a.createdAt).toLocaleDateString()),
+          el("td",{},el("button",{class:"btn danger sm",onclick:()=>{
+            if(confirm(`Remove admin ${a.name}? Candidates they created are kept.`)){
+              DB.saveAccounts(DB.accounts().filter(x=>x.id!==a.id));renderStaff("admins");}
+          }},"Remove")));
+      })))):el("div",{class:"empty"},"No admins yet.")));
+}
+
+/* ---------- Candidates ---------- */
+function staffUsers(body,actor){
+  const mine=actor.role==="super"?DB.users():DB.users().filter(u=>u.createdBy===actor.id);
+  const cadreOpts=[el("option",{value:""},"Let candidate choose & lock"),
+    ...CADRES.map(c=>el("option",{value:c.name},c.name))];
+  body.append(el("div",{class:"card"},el("h2",{},"Create a candidate"),
+    formGrid([
+      ["Full name","u_name","text","Candidate's name"],
+      ["Username","u_user","text","e.g. staff/12345"],
+      ["Password","u_pass","text","Temporary password"],
+      ["Attempts allowed","u_att","number","e.g. 3"]]),
+    el("div",{class:"field"},el("label",{},"Cadre (optional)"),
+      el("select",{id:"u_cadre"},...cadreOpts),
+      el("div",{class:"hint"},"Leave as 'Let candidate choose' to have them pick and lock it themselves at first login.")),
+    el("button",{class:"btn",onclick:()=>{
+      const name=$("#u_name").value.trim(),u=$("#u_user").value.trim(),p=$("#u_pass").value;
+      const att=parseInt($("#u_att").value,10),cadre=$("#u_cadre").value;
+      if(!name||!u||!p)return toast("Fill name, username and password","err");
+      if(!Number.isFinite(att)||att<0)return toast("Enter a valid attempts number","err");
+      if(existsUsername(u))return toast("That username is taken","err");
+      const users=DB.users();
+      users.push({id:uid("usr"),username:u,passHash:hash(p),name,createdBy:actor.id,createdAt:Date.now(),
+        cadre:cadre||null,targetPost:null,cadreLocked:!!cadre,attemptsAllocated:att});
+      DB.saveUsers(users);toast("Candidate created","ok");renderStaff("users");
+    }},"Create candidate")));
+  body.append(el("div",{class:"card"},el("h2",{},`Candidates (${mine.length})`),
+    mine.length?el("div",{class:"table-wrap"},el("table",{},
+      el("thead",{},el("tr",{},el("th",{},"Name"),el("th",{},"Username"),el("th",{},"Cadre"),
+        el("th",{},"Attempts"),el("th",{},"Avg"),el("th",{},"Actions"))),
+      el("tbody",{},...mine.map(u=>{
+        const atts=userAttempts(u.id);const avg=atts.length?Math.round(atts.reduce((s,a)=>s+a.pct,0)/atts.length)+"%":"—";
+        return el("tr",{},
+          el("td",{},u.name),el("td",{},u.username),
+          el("td",{},u.cadre?el("span",{},u.cadre,u.cadreLocked?el("span",{class:"badge lock",style:"margin-left:.4rem"},"🔒"):""):el("span",{style:"color:var(--muted)"},"not set")),
+          el("td",{},`${atts.length}/${u.attemptsAllocated||0}`),
+          el("td",{},avg),
+          el("td",{},el("button",{class:"btn sec sm",onclick:()=>manageUser(u.id)},"Manage")));
+      })))):el("div",{class:"empty"},"No candidates yet.")));
+}
+function manageUser(id){
+  const u=DB.users().find(x=>x.id===id);const atts=userAttempts(id);
+  const attInput=el("input",{type:"number",value:u.attemptsAllocated||0,min:"0",style:"max-width:120px"});
+  const m=modal(el("div",{},
+    el("h3",{},"Manage: "+esc(u.name)),
+    el("div",{class:"kv"},el("span",{},"Username"),el("b",{},u.username)),
+    el("div",{class:"kv"},el("span",{},"Cadre"),el("b",{},u.cadre||"not set")),
+    el("div",{class:"kv"},el("span",{},"Target post"),el("b",{},u.targetPost||"—")),
+    el("div",{class:"kv"},el("span",{},"Sessions taken"),el("b",{},atts.length)),
+    el("div",{class:"field",style:"margin-top:1rem"},el("label",{},"Attempts allowed"),
+      el("div",{class:"row"},attInput,
+        el("button",{class:"btn sm",onclick:()=>{
+          const v=parseInt(attInput.value,10);if(!Number.isFinite(v)||v<0)return toast("Invalid number","err");
+          const users=DB.users();users.find(x=>x.id===id).attemptsAllocated=v;DB.saveUsers(users);
+          toast("Attempts updated","ok");
+        }},"Save"))),
+    el("div",{class:"row",style:"margin-top:.6rem"},
+      el("button",{class:"btn sec sm",onclick:()=>{
+        const np=prompt("New temporary password for "+u.username);if(!np)return;
+        const users=DB.users();users.find(x=>x.id===id).passHash=hash(np);DB.saveUsers(users);toast("Password reset","ok");
+      }},"Reset password"),
+      el("button",{class:"btn warn sm",disabled:u.cadreLocked?null:"",onclick:()=>{
+        if(!confirm("Unlock this candidate's cadre? They will choose again at next login."))return;
+        const users=DB.users();const x=users.find(y=>y.id===id);x.cadre=null;x.targetPost=null;x.cadreLocked=false;
+        DB.saveUsers(users);m.close();toast("Cadre unlocked","ok");renderStaff("users");
+      }},"Reset cadre lock"),
+      el("button",{class:"btn danger sm",onclick:()=>{
+        if(!confirm("Delete this candidate and their results?"))return;
+        DB.saveUsers(DB.users().filter(x=>x.id!==id));DB.saveAttempts(DB.attempts().filter(a=>a.userId!==id));
+        m.close();toast("Candidate deleted","ok");renderStaff("users");
+      }},"Delete"))
+  ));
+}
+
+/* ---------- Question bank ---------- */
+let BANK_FILTER={category:"",type:"",scope:""};
+function staffBank(body){
+  const qs=DB.questions();
+  body.append(el("div",{class:"card"},
+    el("div",{class:"row",style:"align-items:center"},
+      el("h2",{style:"flex:1;margin:0"},`Question bank — ${qs.length} item(s)`),
+      el("button",{class:"btn sm",onclick:()=>addQuestionModal()},"+ Add question"),
+      el("button",{class:"btn sec sm",onclick:()=>csvModal()},"Bulk upload (CSV)"),
+      el("button",{class:"btn warn sm",onclick:()=>aiModal()},"✦ Generate with AI")),
+    el("div",{class:"row",style:"margin-top:1rem"},
+      filterSel("Category",["",...CATEGORIES],BANK_FILTER.category,v=>{BANK_FILTER.category=v;renderStaff("bank");}),
+      filterSel("Type",["",...TYPES.map(t=>t.id)],BANK_FILTER.type,v=>{BANK_FILTER.type=v;renderStaff("bank");},id=>TYPES.find(t=>t.id===id)?.label||id),
+      filterSel("Scope",["","COMMON",...CADRES.map(c=>c.name)],BANK_FILTER.scope,v=>{BANK_FILTER.scope=v;renderStaff("bank");}))));
+  let list=qs.filter(q=>(!BANK_FILTER.category||q.category===BANK_FILTER.category)
+    &&(!BANK_FILTER.type||q.type===BANK_FILTER.type)&&(!BANK_FILTER.scope||q.scope===BANK_FILTER.scope));
+  // coverage summary
+  const cov=el("div",{class:"grid cols4",style:"margin-bottom:1rem"});
+  CATEGORIES.slice(0,4).concat().forEach(()=>{});
+  const covWrap=el("div",{class:"card"},el("h3",{},"Coverage by subject"),
+    el("div",{class:"catbar"},...CATEGORIES.map(c=>{
+      const n=qs.filter(q=>q.category===c).length;
+      return el("div",{class:"item"},el("div",{class:"lab"},c),
+        el("div",{class:"track"},el("div",{class:"bar",style:`width:${Math.min(100,n)}%;background:${CAT_COLORS[c]}`})),
+        el("div",{class:"pct"},n));
+    })));
+  body.append(covWrap);
+  const listCard=el("div",{class:"card"},el("h3",{},`Showing ${list.length} item(s)`));
+  if(!list.length)listCard.append(el("div",{class:"empty"},"No questions match these filters."));
+  else list.slice(0,300).forEach(q=>listCard.append(bankRow(q)));
+  body.append(listCard);
+}
+function bankRow(q){
+  return el("div",{style:"border-bottom:1px solid var(--line-soft);padding:.7rem 0"},
+    el("div",{style:"display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-bottom:.3rem"},
+      el("span",{class:"badge",style:`background:${CAT_COLORS[q.category]}22;color:${CAT_COLORS[q.category]}`},q.category),
+      el("span",{class:"badge lock"},TYPES.find(t=>t.id===q.type)?.label||q.type),
+      el("span",{class:"badge lock"},q.scope),
+      q.difficulty?el("span",{class:"badge lock"},q.difficulty):"",
+      el("span",{style:"flex:1"}),
+      el("button",{class:"btn danger sm",onclick:()=>{
+        if(confirm("Delete this question?")){DB.saveQuestions(DB.questions().filter(x=>x.id!==q.id));renderStaff("bank");}
+      }},"Delete")),
+    el("div",{style:"font-weight:600"},q.stem),
+    el("div",{style:"font-size:.86rem;color:var(--muted);margin-top:.25rem"},"Answer: "+esc(answerKeyText(q))));
+}
+function addQuestionModal(){
+  const catSel=el("select",{},...CATEGORIES.map(c=>el("option",{value:c},c)));
+  const typeSel=el("select",{},...TYPES.map(t=>el("option",{value:t.id},t.label)));
+  const scopeSel=el("select",{},el("option",{value:"COMMON"},"COMMON (all cadres)"),
+    ...CADRES.map(c=>el("option",{value:c.name},c.name)));
+  const diffSel=el("select",{},...["easy","medium","hard"].map(d=>el("option",{value:d},d)));
+  const stem=el("textarea",{placeholder:"Question text"});
+  const dyn=el("div",{});
+  const explain=el("textarea",{placeholder:"Explanation shown to learners who miss it"});
+  function renderDyn(){
+    const t=typeSel.value;dyn.innerHTML="";
+    if(t==="mcq")dyn.append(el("div",{class:"field"},el("label",{},"Options — one per line; put * at the start of the correct one"),
+      el("textarea",{id:"aq_opts",placeholder:"*Correct option\nWrong option\nWrong option"})));
+    else if(t==="truefalse")dyn.append(el("div",{class:"field"},el("label",{},"Correct answer"),
+      el("select",{id:"aq_tf"},el("option",{value:"true"},"True"),el("option",{value:"false"},"False"))));
+    else if(t==="shortanswer")dyn.append(el("div",{class:"field"},el("label",{},"Accepted answers — one per line"),
+      el("textarea",{id:"aq_acc",placeholder:"petition\na petition"})));
+    else if(t==="ordering")dyn.append(el("div",{class:"field"},el("label",{},"Items in CORRECT order — one per line"),
+      el("textarea",{id:"aq_items",placeholder:"First\nSecond\nThird"})));
+    else if(t==="matching")dyn.append(el("div",{class:"field"},el("label",{},"Pairs — one per line as  left = right"),
+      el("textarea",{id:"aq_pairs",placeholder:"Concise = Brief and clear\nImpartial = Not favouring one side"})));
+  }
+  typeSel.onchange=renderDyn;renderDyn();
+  const m=modal(el("div",{},el("h3",{},"Add a question"),
+    el("div",{class:"row"},el("div",{class:"field",style:"flex:1"},el("label",{},"Subject"),catSel),
+      el("div",{class:"field",style:"flex:1"},el("label",{},"Type"),typeSel)),
+    el("div",{class:"row"},el("div",{class:"field",style:"flex:1"},el("label",{},"Scope"),scopeSel),
+      el("div",{class:"field",style:"flex:1"},el("label",{},"Difficulty"),diffSel)),
+    el("div",{class:"field"},el("label",{},"Question"),stem),dyn,
+    el("div",{class:"field"},el("label",{},"Explanation"),explain),
+    el("div",{class:"row"},el("button",{class:"btn sec",onclick:()=>m.close()},"Cancel"),
+      el("button",{class:"btn",onclick:()=>{
+        try{const q=buildQuestionFromForm(catSel.value,typeSel.value,scopeSel.value,diffSel.value,stem.value,explain.value);
+          const qs=DB.questions();qs.push({id:uid("q"),...q});DB.saveQuestions(qs);
+          m.close();toast("Question added","ok");renderStaff("bank");
+        }catch(e){toast(e.message,"err");}
+      }},"Save question"))));
+}
+function buildQuestionFromForm(category,type,scope,difficulty,stemV,explainV){
+  const stem=stemV.trim();if(!stem)throw new Error("Question text is required");
+  const q={scope,category,type,difficulty,stem,explanation:explainV.trim()};
+  if(type==="mcq"){
+    const lines=$("#aq_opts").value.split("\n").map(s=>s.trim()).filter(Boolean);
+    if(lines.length<2)throw new Error("Give at least two options");
+    const ans=lines.findIndex(l=>l.startsWith("*"));if(ans<0)throw new Error("Mark the correct option with a leading *");
+    q.options=lines.map(l=>l.replace(/^\*/,"").trim());q.answer=ans;
+  }else if(type==="truefalse")q.answer=$("#aq_tf").value==="true";
+  else if(type==="shortanswer"){q.accept=$("#aq_acc").value.split("\n").map(s=>s.trim()).filter(Boolean);
+    if(!q.accept.length)throw new Error("Give at least one accepted answer");}
+  else if(type==="ordering"){q.items=$("#aq_items").value.split("\n").map(s=>s.trim()).filter(Boolean);
+    if(q.items.length<2)throw new Error("Give at least two items");}
+  else if(type==="matching"){q.pairs=$("#aq_pairs").value.split("\n").map(s=>s.trim()).filter(Boolean)
+      .map(l=>{const i=l.indexOf("=");if(i<0)throw new Error("Each pair needs an = sign");
+        return{l:l.slice(0,i).trim(),r:l.slice(i+1).trim()};});
+    if(!q.pairs.length)throw new Error("Give at least one pair");}
+  return q;
+}
+
+/* ---------- CSV bulk upload ---------- */
+function csvModal(){
+  const template="scope,category,type,stem,options,answer,explanation,difficulty\n"+
+    'COMMON,Quantitative,mcq,"What is 10% of 500?",50|40|60|45,50,"10% of 500 = 50",easy\n'+
+    'COMMON,Current Affairs,truefalse,"Ikeja is the capital of Lagos State.",,TRUE,"Ikeja is the capital.",easy\n'+
+    'COMMON,English and Grammar,shortanswer,"Plural of memorandum?",,memoranda|memorandums,"Latin plural.",easy\n'+
+    'COMMON,Logic,ordering,"Order smallest to largest.",3|6|12|24,,"Each doubles.",easy\n'+
+    'COMMON,Qualitative,matching,"Match word to meaning.",Concise=Brief|Impartial=Unbiased,,"Definitions.",medium\n';
+  const ta=el("textarea",{placeholder:"Paste CSV rows here",style:"min-height:160px"});
+  const file=el("input",{type:"file",accept:".csv,text/csv"});
+  file.onchange=()=>{const f=file.files[0];if(!f)return;const r=new FileReader();
+    r.onload=()=>{ta.value=r.result;};r.readAsText(f);};
+  const m=modal(el("div",{},el("h3",{},"Bulk upload questions"),
+    el("p",{style:"font-size:.9rem;color:var(--muted)"},
+      "Columns: scope, category, type, stem, options, answer, explanation, difficulty. "+
+      "For mcq use | between options and put the correct option text (or 0-based index) in answer. "+
+      "For ordering, list items in correct order in options. For matching, use left=right pairs in options. "+
+      "For true/false put TRUE/FALSE in answer. For short answer put accepted answers separated by | in answer."),
+    el("div",{class:"row",style:"margin:.5rem 0"},
+      el("button",{class:"btn sec sm",onclick:()=>{
+        const blob=new Blob([template],{type:"text/csv"});const a=el("a",{href:URL.createObjectURL(blob),download:"cbt_question_template.csv"});
+        document.body.append(a);a.click();a.remove();}},"⬇ Download template"),
+      el("label",{class:"btn sec sm",style:"display:inline-block"},"Choose CSV file",file)),
+    el("div",{class:"field"},el("label",{},"Or paste rows"),ta),
+    el("div",{class:"row"},el("button",{class:"btn sec",onclick:()=>m.close()},"Cancel"),
+      el("button",{class:"btn",onclick:()=>{
+        try{const added=importCSV(ta.value);m.close();toast(`${added} question(s) imported`,"ok");renderStaff("bank");}
+        catch(e){toast(e.message,"err");}
+      }},"Import"))));
+}
+function parseCSV(text){
+  const rows=[];let row=[],cur="",q=false;
+  for(let i=0;i<text.length;i++){const c=text[i];
+    if(q){if(c==='"'){if(text[i+1]==='"'){cur+='"';i++;}else q=false;}else cur+=c;}
+    else{if(c==='"')q=true;else if(c===","){row.push(cur);cur="";}
+      else if(c==="\n"||c==="\r"){if(c==="\r"&&text[i+1]==="\n")i++;row.push(cur);rows.push(row);row=[];cur="";}
+      else cur+=c;}}
+  if(cur.length||row.length){row.push(cur);rows.push(row);}
+  return rows.filter(r=>r.some(c=>c.trim()!==""));
+}
+function importCSV(text){
+  const rows=parseCSV(text.trim());if(rows.length<2)throw new Error("No data rows found");
+  const head=rows[0].map(h=>h.trim().toLowerCase());
+  const ix=n=>head.indexOf(n);
+  const need=["scope","category","type","stem"];for(const n of need)if(ix(n)<0)throw new Error("Missing column: "+n);
+  const out=[];
+  for(let r=1;r<rows.length;r++){const row=rows[r];const g=n=>ix(n)>=0?(row[ix(n)]||"").trim():"";
+    const type=g("type").toLowerCase();const scope=g("scope")||"COMMON";
+    const category=CATEGORIES.find(c=>c.toLowerCase()===g("category").toLowerCase())||g("category");
+    if(!CATEGORIES.includes(category))throw new Error(`Row ${r+1}: unknown category "${g("category")}"`);
+    const q={scope,category,type,stem:g("stem"),explanation:g("explanation"),difficulty:g("difficulty")||"medium"};
+    const opts=g("options"),ans=g("answer");
+    if(type==="mcq"){q.options=opts.split("|").map(s=>s.trim()).filter(Boolean);
+      let a=q.options.findIndex(o=>o.toLowerCase()===ans.toLowerCase());
+      if(a<0&&/^\d+$/.test(ans))a=parseInt(ans,10);
+      if(a<0||a>=q.options.length)throw new Error(`Row ${r+1}: answer must match an option or be a valid index`);
+      q.answer=a;}
+    else if(type==="truefalse")q.answer=/^t|true|1|yes$/i.test(ans);
+    else if(type==="shortanswer")q.accept=ans.split("|").map(s=>s.trim()).filter(Boolean);
+    else if(type==="ordering")q.items=opts.split("|").map(s=>s.trim()).filter(Boolean);
+    else if(type==="matching")q.pairs=opts.split("|").map(s=>s.trim()).filter(Boolean)
+      .map(p=>{const i=p.indexOf("=");return{l:p.slice(0,i).trim(),r:p.slice(i+1).trim()};});
+    else throw new Error(`Row ${r+1}: unknown type "${type}"`);
+    if(!q.stem)throw new Error(`Row ${r+1}: missing stem`);
+    out.push({id:uid("q"),...q});}
+  const qs=DB.questions();qs.push(...out);DB.saveQuestions(qs);return out.length;
+}
+
+/* ---------- AI generator ---------- */
+function aiModal(){
+  const cfg=DB.config();
+  const catSel=el("select",{},...CATEGORIES.map(c=>el("option",{value:c},c)));
+  const typeSel=el("select",{},...TYPES.map(t=>el("option",{value:t.id},t.label)));
+  const scopeSel=el("select",{},el("option",{value:"COMMON"},"COMMON (all cadres)"),
+    ...CADRES.map(c=>el("option",{value:c.name},c.name)));
+  const countSel=el("input",{type:"number",value:"5",min:"1",max:"20"});
+  const diffSel=el("select",{},...["mixed","easy","medium","hard"].map(d=>el("option",{value:d},d)));
+  const status=el("div",{style:"margin-top:.6rem;font-size:.9rem"});
+  const m=modal(el("div",{},el("h3",{},"Generate questions with AI"),
+    cfg.aiKey?"":el("div",{class:"notice"},"No API key set. Add one under Settings → AI generator. Without a key this tool cannot run, but bulk CSV upload works fully offline."),
+    el("div",{class:"row"},el("div",{class:"field",style:"flex:1"},el("label",{},"Subject"),catSel),
+      el("div",{class:"field",style:"flex:1"},el("label",{},"Type"),typeSel)),
+    el("div",{class:"row"},el("div",{class:"field",style:"flex:1"},el("label",{},"Scope"),scopeSel),
+      el("div",{class:"field",style:"flex:1"},el("label",{},"How many"),countSel),
+      el("div",{class:"field",style:"flex:1"},el("label",{},"Difficulty"),diffSel)),
+    status,
+    el("div",{class:"row"},el("button",{class:"btn sec",onclick:()=>m.close()},"Close"),
+      el("button",{class:"btn warn",onclick:async e=>{
+        const btn=e.target;btn.disabled=true;status.textContent="Generating…";
+        try{const items=await aiGenerate(catSel.value,typeSel.value,scopeSel.value,+countSel.value,diffSel.value);
+          const qs=DB.questions();qs.push(...items.map(q=>({id:uid("q"),...q})));DB.saveQuestions(qs);
+          status.innerHTML=`<span style="color:var(--success)">Added ${items.length} question(s).</span>`;
+          toast(`${items.length} generated`,"ok");renderStaff("bank");
+        }catch(err){status.innerHTML=`<span style="color:var(--danger)">${esc(err.message)}</span>`;}
+        finally{btn.disabled=false;}
+      }},"Generate")))); 
+}
+async function aiGenerate(category,type,scope,count,difficulty){
+  const cfg=DB.config();
+  if(!cfg.aiKey)throw new Error("Set an API key in Settings first.");
+  const schema={mcq:'{"type":"mcq","stem":"...","options":["a","b","c","d"],"answer":0,"explanation":"..."}',
+    truefalse:'{"type":"truefalse","stem":"...","answer":true,"explanation":"..."}',
+    shortanswer:'{"type":"shortanswer","stem":"...","accept":["ans1","ans2"],"explanation":"..."}',
+    ordering:'{"type":"ordering","stem":"...","items":["first","second","third"],"explanation":"..."}',
+    matching:'{"type":"matching","stem":"...","pairs":[{"l":"term","r":"meaning"}],"explanation":"..."}'}[type];
+  const prompt=`Generate ${count} ${difficulty==="mixed"?"":difficulty+" difficulty"} practice questions for a Lagos State (Nigeria) civil service promotion exam.
+Subject: ${category}. Question type: ${type}.
+Return ONLY a JSON array, no prose, no markdown fences. Each element must match exactly this shape:
+${schema}
+For ordering, list items in the CORRECT order. For matching, l is the prompt and r is its correct match. Every question must include a clear "explanation".`;
+  const res=await fetch(cfg.aiEndpoint,{method:"POST",
+    headers:{"Content-Type":"application/json","x-api-key":cfg.aiKey,
+      "anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+    body:JSON.stringify({model:cfg.aiModel||"claude-sonnet-4-6",max_tokens:2000,
+      messages:[{role:"user",content:prompt}]})});
+  if(!res.ok)throw new Error("API error "+res.status+" — check key/endpoint/CORS");
+  const data=await res.json();
+  let txt=(data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("\n").trim();
+  txt=txt.replace(/^```json\s*|\s*```$/g,"").trim();
+  let arr;try{arr=JSON.parse(txt);}catch{throw new Error("Model did not return valid JSON");}
+  if(!Array.isArray(arr))arr=[arr];
+  return arr.map(q=>({scope,category,type,difficulty:difficulty==="mixed"?"medium":difficulty,
+    stem:q.stem,explanation:q.explanation||"",
+    ...(type==="mcq"?{options:q.options,answer:q.answer}:{}),
+    ...(type==="truefalse"?{answer:!!q.answer}:{}),
+    ...(type==="shortanswer"?{accept:q.accept||[]}:{}),
+    ...(type==="ordering"?{items:q.items||[]}:{}),
+    ...(type==="matching"?{pairs:q.pairs||[]}:{})})).filter(q=>q.stem);
+}
+
+/* ---------- Analytics (cohort) ---------- */
+function staffAnalytics(body,actor){
+  const users=actor.role==="super"?DB.users():DB.users().filter(u=>u.createdBy===actor.id);
+  const uids=new Set(users.map(u=>u.id));
+  const atts=DB.attempts().filter(a=>uids.has(a.userId));
+  body.append(el("div",{class:"grid cols4"},
+    el("div",{class:"card stat"},el("div",{class:"n"},users.length),el("div",{class:"l"},"Candidates")),
+    el("div",{class:"card stat"},el("div",{class:"n"},DB.questions().length),el("div",{class:"l"},"Questions in bank")),
+    el("div",{class:"card stat"},el("div",{class:"n"},atts.length),el("div",{class:"l"},"Sessions taken")),
+    el("div",{class:"card stat"},el("div",{class:"n"},atts.length?Math.round(atts.reduce((s,a)=>s+a.pct,0)/atts.length)+"%":"—"),el("div",{class:"l"},"Average score"))));
+  body.append(el("div",{class:"card"},el("h2",{},"Where candidates struggle"),
+    el("p",{style:"color:var(--muted);font-size:.9rem;margin-top:-.3rem"},"Accuracy across all sessions, by subject. Low bars show topics to reinforce."),
+    catBars(categoryStats(atts))));
+  if(users.length)body.append(el("div",{class:"card"},el("h2",{},"Candidate performance"),
+    el("div",{class:"table-wrap"},el("table",{},
+      el("thead",{},el("tr",{},el("th",{},"Candidate"),el("th",{},"Cadre"),el("th",{},"Sessions"),el("th",{},"Average"),el("th",{},"Best"))),
+      el("tbody",{},...users.map(u=>{const ua=userAttempts(u.id);
+        return el("tr",{},el("td",{},u.name),el("td",{},u.cadre||"—"),el("td",{},ua.length),
+          el("td",{},ua.length?Math.round(ua.reduce((s,a)=>s+a.pct,0)/ua.length)+"%":"—"),
+          el("td",{},ua.length?Math.max(...ua.map(a=>a.pct))+"%":"—"));}))))));
+}
+
+/* ---------- Settings ---------- */
+function staffSettings(body,actor){
+  const cfg=DB.config();
+  body.append(el("div",{class:"card"},el("h2",{},"Practice session settings"),
+    el("div",{class:"row"},
+      el("div",{class:"field",style:"flex:1"},el("label",{},"Questions per session"),
+        el("input",{type:"number",id:"set_len",value:cfg.examLength||20,min:"1"})),
+      el("div",{class:"field",style:"flex:1"},el("label",{},"Time limit (minutes)"),
+        el("input",{type:"number",id:"set_dur",value:cfg.durationMins||30,min:"1"}))),
+    el("button",{class:"btn",onclick:()=>{DB.saveConfig({examLength:+$("#set_len").value||20,durationMins:+$("#set_dur").value||30});
+      toast("Saved","ok");}},"Save session settings")));
+  body.append(el("div",{class:"card"},el("h2",{},"AI generator"),
+    el("p",{style:"color:var(--muted);font-size:.9rem;margin-top:-.3rem"},
+      "Used only by the ✦ Generate with AI tool. Stored on this device. Anthropic and OpenRouter endpoints both work; direct browser calls need CORS to be allowed."),
+    el("div",{class:"field"},el("label",{},"API endpoint"),el("input",{type:"text",id:"set_ep",value:cfg.aiEndpoint||""})),
+    el("div",{class:"row"},
+      el("div",{class:"field",style:"flex:1"},el("label",{},"Model"),el("input",{type:"text",id:"set_model",value:cfg.aiModel||""})),
+      el("div",{class:"field",style:"flex:1"},el("label",{},"API key"),el("input",{type:"password",id:"set_key",value:cfg.aiKey||"",placeholder:"sk-…"}))),
+    el("button",{class:"btn",onclick:()=>{DB.saveConfig({aiEndpoint:$("#set_ep").value.trim(),
+      aiModel:$("#set_model").value.trim(),aiKey:$("#set_key").value.trim()});toast("Saved","ok");}},"Save AI settings")));
+  body.append(el("div",{class:"card"},el("h2",{},"Change my password"),
+    el("div",{class:"row"},el("input",{type:"password",id:"set_pw",placeholder:"New password"}),
+      el("button",{class:"btn",onclick:()=>{const v=$("#set_pw").value;if(!v)return toast("Enter a password","err");
+        const accs=DB.accounts();const me=accs.find(a=>a.id===actor.id);me.passHash=hash(v);delete me.mustChange;
+        DB.saveAccounts(accs);toast("Password changed","ok");$("#set_pw").value="";}},"Update password"))));
+}
+
+/* ---------- small form helpers ---------- */
+function formGrid(fields){return el("div",{class:"row"},...fields.map(([label,id,type,ph])=>
+  el("div",{class:"field",style:"flex:1;min-width:200px"},el("label",{},label),
+    el("input",{type,id,placeholder:ph||""}))));}
+function filterSel(label,vals,current,onChange,labelFn){
+  const s=el("select",{},...vals.map(v=>el("option",{value:v,selected:v===current?"":null},
+    v===""?("All "+label.toLowerCase()):(labelFn?labelFn(v):v))));
+  s.onchange=()=>onChange(s.value);
+  return el("div",{class:"field",style:"flex:1;margin:0"},el("label",{},label),s);}
+function existsUsername(u){const l=u.toLowerCase();
+  return DB.accounts().some(a=>a.username.toLowerCase()===l)||DB.users().some(a=>a.username.toLowerCase()===l);}
+
+/* ---------- init ---------- */
+DB.seed();
+boot();
+
+</script>
+</body>
+</html>
