@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CBT Platform — Civil Service Promotion Practice Exam</title>
+<title>CBT Platform — Lagos State Civil Service Promotion Practice</title>
 <style>
 :root{
   --ink:#132638; --muted:#5b6b78; --primary:#0e4d6b; --primary-600:#0b3e57;
@@ -179,6 +179,10 @@ tr:hover td{background:#fafcfd}
   font-size:.9rem;color:#6b5208;margin-bottom:1rem}
 .empty{text-align:center;color:var(--muted);padding:2.5rem 1rem}
 @media(prefers-reduced-motion:reduce){*{transition:none !important;animation:none !important}}
+/* content protection (deterrent only) */
+body{-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none}
+input,textarea,select{-webkit-user-select:text;-moz-user-select:text;-ms-user-select:text;user-select:text}
+img{-webkit-user-drag:none;user-drag:none;pointer-events:none}
 </style>
 </head>
 <body>
@@ -188,6 +192,7 @@ tr:hover td{background:#fafcfd}
     <div class="brand"><span class="mark">CBT</span><span>CBT Platform</span></div>
     <div class="spacer"></div>
     <div class="who" id="whoami"></div>
+    <button class="btn ghost sm hidden" id="pwBtn">Change password</button>
     <button class="btn ghost sm" id="logoutBtn">Log out</button>
   </header>
   <main class="main" id="view"></main>
@@ -373,11 +378,22 @@ const SEED_QUESTIONS = [
  explanation:"The Federal Capital was formally moved from Lagos to Abuja in 1991."}
 ];
 /* ============================================================
-   CBT Platform — application logic (single file, offline-capable)
-   Data layer is a thin wrapper over localStorage so each call
-   maps cleanly to a future Google Apps Script endpoint.
+   CBT Platform — application logic (single file)
+   Runs in two modes:
+     • Offline mode  — API_URL empty: data lives in localStorage.
+     • Backend mode  — API_URL set:   data lives in Google Sheets
+                       via an Apps Script web app. The front end
+                       hydrates an in-memory cache on login and
+                       syncs every write back to the server.
    ============================================================ */
 "use strict";
+
+/* ====== BACKEND CONFIG ======
+   Paste your deployed Apps Script web-app URL between the quotes to
+   switch the whole platform to the shared Google Sheets backend.
+   Leave it empty to run standalone on this device (localStorage).   */
+const API_URL = "https://script.google.com/macros/s/AKfycbyHAUzfCvldJ7Jn4XbV8-B79d3lKpO6aHRW9LGwAC1kp1A2fNwk3Qd_BN_gVLOjfTPrEA/exec";
+const BACKEND = !!API_URL;
 
 const CATEGORIES = ["Quantitative","Qualitative","Logic","English and Grammar",
   "Lagos State Civil Service Rules","Lagos State Financial Regulations","Current Affairs"];
@@ -401,28 +417,81 @@ function el(tag,attrs={},...kids){const n=document.createElement(tag);
     else if(k.startsWith("on")&&typeof attrs[k]==="function")n.addEventListener(k.slice(2),attrs[k]);
     else if(attrs[k]!=null)n.setAttribute(k,attrs[k]);}
   kids.flat().forEach(c=>n.append(c?.nodeType?c:document.createTextNode(c)));return n;}
-const uid=p=>(p||"id")+Math.random().toString(36).slice(2,9);
+const uid=p=>(p||"id")+Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-3);
 function hash(s){let h=5381;for(let i=0;i<s.length;i++){h=((h<<5)+h)+s.charCodeAt(i);h|=0}return "h"+(h>>>0).toString(36);}
 function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 const norm=s=>String(s??"").trim().toLowerCase().replace(/[₦.,]/g,"").replace(/\s+/g," ");
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 function toast(msg,kind=""){const t=el("div",{class:"toast "+kind},msg);document.body.append(t);
-  setTimeout(()=>t.remove(),2600);}
+  setTimeout(()=>t.remove(),2800);}
 function modal(node){const bg=el("div",{class:"modal-bg",onclick:e=>{if(e.target===bg)bg.remove();}});
   const m=el("div",{class:"modal"});m.append(node);bg.append(m);$("#modalMount").append(bg);
   return{close:()=>bg.remove()};}
 
-/* ---------- DB ---------- */
+/* ---------- API transport (backend mode) ---------- */
+async function api(action,payload={}){
+  const sess=DB.session();const token=(sess&&sess.token)||null;
+  const res=await fetch(API_URL,{method:"POST",
+    headers:{"Content-Type":"text/plain;charset=utf-8"},
+    body:JSON.stringify({action,token,...payload}),redirect:"follow"});
+  let data;try{data=await res.json();}catch(e){throw new Error("Server did not return valid data");}
+  if(data&&data.ok===false){
+    if(data.error==="auth"){DB.setSession(null);DB._loaded=false;renderAuth();}
+    throw new Error(data.error||"Request failed");
+  }
+  return data;
+}
+async function bootstrapData(){
+  const data=await api("bootstrap",{});
+  DB._cache.accounts=data.accounts||[];
+  DB._cache.users=data.users||[];
+  DB._cache.questions=data.questions||[];
+  DB._cache.attempts=data.attempts||[];
+  DB._cache.config=data.config||{};
+  DB._role=data.role;DB._actor=data.actor||DB._actor;DB._loaded=true;
+}
+
+/* ---------- DB (dual mode) ---------- */
 const DB={
   k:{acc:"cbt_accounts",usr:"cbt_users",q:"cbt_questions",att:"cbt_attempts",cfg:"cbt_config",ses:"cbt_session"},
+  _cache:{accounts:[],users:[],questions:[],attempts:[],config:{}},
+  _loaded:false,_role:null,_actor:null,
   _r(k,d){try{return JSON.parse(localStorage.getItem(k))??d;}catch{return d;}},
   _w(k,v){localStorage.setItem(k,JSON.stringify(v));},
-  accounts(){return this._r(this.k.acc,[]);}, saveAccounts(a){this._w(this.k.acc,a);},
-  users(){return this._r(this.k.usr,[]);}, saveUsers(u){this._w(this.k.usr,u);},
-  questions(){return this._r(this.k.q,[]);}, saveQuestions(q){this._w(this.k.q,q);},
-  attempts(){return this._r(this.k.att,[]);}, saveAttempts(a){this._w(this.k.att,a);},
-  config(){return this._r(this.k.cfg,{});}, saveConfig(c){this._w(this.k.cfg,{...this.config(),...c});},
-  session(){return this._r(this.k.ses,null);}, setSession(s){s?this._w(this.k.ses,s):localStorage.removeItem(this.k.ses);},
+  _bg(p){return p&&p.catch?p.catch(e=>toast("Sync problem: "+e.message,"err")):Promise.resolve();},
+  /* reads */
+  accounts(){return BACKEND?this._cache.accounts:this._r(this.k.acc,[]);},
+  users(){return BACKEND?this._cache.users:this._r(this.k.usr,[]);},
+  questions(){return BACKEND?this._cache.questions:this._r(this.k.q,[]);},
+  attempts(){return BACKEND?this._cache.attempts:this._r(this.k.att,[]);},
+  config(){return BACKEND?this._cache.config:this._r(this.k.cfg,{});},
+  session(){return this._r(this.k.ses,null);},
+  setSession(s){s?this._w(this.k.ses,s):localStorage.removeItem(this.k.ses);},
+  /* local-only bulk writers (used by offline mode + seed) */
+  saveAccounts(a){this._w(this.k.acc,a);}, saveUsers(u){this._w(this.k.usr,u);},
+  saveQuestions(q){this._w(this.k.q,q);}, saveAttempts(a){this._w(this.k.att,a);},
+  /* granular writers (mode-aware; return a promise) */
+  createAccount(rec){if(BACKEND)return api("createAccount",{rec}).then(()=>{this._cache.accounts.push(rec);});
+    const a=this.accounts();a.push(rec);this.saveAccounts(a);return Promise.resolve();},
+  updateAccount(id,patch){if(BACKEND){const a=this._cache.accounts.find(x=>x.id===id);if(a)Object.assign(a,patch);return this._bg(api("updateAccount",{id,patch}));}
+    const arr=this.accounts();const r=arr.find(x=>x.id===id);if(r)Object.assign(r,patch);this.saveAccounts(arr);return Promise.resolve();},
+  deleteAccount(id){if(BACKEND){this._cache.accounts=this._cache.accounts.filter(x=>x.id!==id);return this._bg(api("deleteAccount",{id}));}
+    this.saveAccounts(this.accounts().filter(x=>x.id!==id));return Promise.resolve();},
+  createUser(rec){if(BACKEND)return api("createUser",{rec}).then(()=>{this._cache.users.push(rec);});
+    const u=this.users();u.push(rec);this.saveUsers(u);return Promise.resolve();},
+  updateUser(id,patch){if(BACKEND){const u=this._cache.users.find(x=>x.id===id);if(u)Object.assign(u,patch);return this._bg(api("updateUser",{id,patch}));}
+    const arr=this.users();const r=arr.find(x=>x.id===id);if(r)Object.assign(r,patch);this.saveUsers(arr);return Promise.resolve();},
+  deleteUser(id){if(BACKEND){this._cache.users=this._cache.users.filter(x=>x.id!==id);this._cache.attempts=this._cache.attempts.filter(a=>a.userId!==id);return this._bg(api("deleteUser",{id}));}
+    this.saveUsers(this.users().filter(x=>x.id!==id));this.saveAttempts(this.attempts().filter(a=>a.userId!==id));return Promise.resolve();},
+  addQuestions(recs){if(BACKEND){this._cache.questions.push(...recs);return this._bg(api("addQuestions",{recs}));}
+    const q=this.questions();q.push(...recs);this.saveQuestions(q);return Promise.resolve();},
+  deleteQuestion(id){if(BACKEND){this._cache.questions=this._cache.questions.filter(x=>x.id!==id);return this._bg(api("deleteQuestion",{id}));}
+    this.saveQuestions(this.questions().filter(x=>x.id!==id));return Promise.resolve();},
+  addAttempt(rec){if(BACKEND){this._cache.attempts.push(rec);return this._bg(api("addAttempt",{rec}));}
+    const a=this.attempts();a.push(rec);this.saveAttempts(a);return Promise.resolve();},
+  saveConfig(patch){if(BACKEND){this._cache.config={...this._cache.config,...patch};return this._bg(api("setConfig",{patch}));}
+    this._w(this.k.cfg,{...this.config(),...patch});return Promise.resolve();},
+  /* offline seed */
   seed(){
     const cfg=this.config();
     if(!cfg.seeded){
@@ -432,20 +501,22 @@ const DB={
           passHash:hash("changeme123"),name:"System Super Admin",createdAt:Date.now(),mustChange:true});
         this.saveAccounts(accs);
       }
-      const qs=this.questions();
-      if(qs.length===0){
-        this.saveQuestions(SEED_QUESTIONS.map(q=>({id:uid("q"),...q})));
-      }
+      if(this.questions().length===0)this.saveQuestions(SEED_QUESTIONS.map(q=>({id:uid("q"),...q})));
       this.saveConfig({seeded:true,examLength:20,durationMins:30,
-        aiEndpoint:"https://api.anthropic.com/v1/messages",aiModel:"claude-sonnet-4-6",aiKey:""});
+        aiProvider:"anthropic",aiModel:"claude-sonnet-4-6",aiKey:""});
     }
   }
 };
 
 /* ---------- session / current actor ---------- */
-let SESSION=null; // {kind:'staff'|'user', id, role}
+let SESSION=null;
 function currentActor(){
-  const s=DB.session(); if(!s)return null;
+  const s=DB.session();if(!s)return null;
+  if(BACKEND){
+    if(!DB._loaded)return DB._actor?{...DB._actor}:null;
+    if(s.kind==="staff"){const a=DB._cache.accounts.find(x=>x.id===s.id)||DB._actor;return a?{...a,kind:"staff"}:null;}
+    const u=DB._cache.users.find(x=>x.id===s.id)||DB._actor;return u?{...u,role:"user",kind:"user"}:null;
+  }
   if(s.kind==="staff"){const a=DB.accounts().find(x=>x.id===s.id);return a?{...a,kind:"staff"}:null;}
   const u=DB.users().find(x=>x.id===s.id);return u?{...u,role:"user",kind:"user"}:null;
 }
@@ -456,26 +527,36 @@ function renderAuth(){
   const wrap=$("#auth");wrap.innerHTML="";
   const uname=el("input",{type:"text",id:"li_u",autocomplete:"username",placeholder:"e.g. superadmin"});
   const pass=el("input",{type:"password",id:"li_p",autocomplete:"current-password",placeholder:"Your password"});
-  const doLogin=()=>{
+  const loginBtn=el("button",{class:"btn",style:"width:100%;margin-top:.4rem"},"Log in");
+  const doLogin=async()=>{
     const u=uname.value.trim(), p=pass.value;
     if(!u||!p){toast("Enter your username and password","err");return;}
+    if(BACKEND){
+      loginBtn.disabled=true;loginBtn.textContent="Signing in…";
+      try{
+        const r=await api("login",{username:u,password:p});
+        DB.setSession({kind:r.actor.kind||(r.role==="user"?"user":"staff"),id:r.actor.id,token:r.token});
+        DB._actor=r.actor;await bootstrapData();boot();
+      }catch(e){toast(e.message||"Login failed","err");loginBtn.disabled=false;loginBtn.textContent="Log in";}
+      return;
+    }
     const acc=DB.accounts().find(a=>a.username.toLowerCase()===u.toLowerCase());
     const usr=DB.users().find(a=>a.username.toLowerCase()===u.toLowerCase());
     const found=acc||usr;
     if(!found||found.passHash!==hash(p)){toast("Incorrect username or password","err");return;}
-    DB.setSession({kind:acc?"staff":"user",id:found.id});
-    boot();
+    DB.setSession({kind:acc?"staff":"user",id:found.id});boot();
   };
+  loginBtn.onclick=doLogin;
   pass.addEventListener("keydown",e=>{if(e.key==="Enter")doLogin();});
   const card=el("div",{class:"auth-card"},
     el("div",{class:"auth-brand"},el("span",{class:"mark"},"CBT"),el("span",{class:"t"},"CBT Platform")),
-    el("div",{class:"auth-sub"},"Civil Service — Promotion Examination Practice"),
+    el("div",{class:"auth-sub"},"Lagos State Civil Service — promotion examination practice"),
     el("div",{class:"field"},el("label",{},"Username"),uname),
     el("div",{class:"field"},el("label",{},"Password"),pass),
-    el("button",{class:"btn",style:"width:100%;margin-top:.4rem",onclick:doLogin},"Log in")
+    loginBtn
   );
   const accs=DB.accounts();
-  if(accs.length===1&&accs[0].mustChange){
+  if(BACKEND||(accs.length===1&&accs[0].mustChange)){
     card.append(el("div",{class:"notice",style:"margin-top:1.1rem"},
       "First-time setup — log in as ",el("b",{},"superadmin")," / ",el("b",{},"changeme123"),
       ", then create your admins and change this password."));
@@ -484,7 +565,10 @@ function renderAuth(){
 }
 
 /* ---------- APP SHELL ---------- */
-function boot(){
+async function boot(){
+  if(BACKEND&&DB.session()&&!DB._loaded){
+    try{await bootstrapData();}catch(e){DB.setSession(null);return renderAuth();}
+  }
   const actor=currentActor();
   if(!actor){renderAuth();return;}
   SESSION=actor;
@@ -492,7 +576,11 @@ function boot(){
   $("#app").classList.remove("hidden");
   const roleLabel={super:"Super Admin",admin:"Admin",user:"Candidate"}[actor.role];
   $("#whoami").innerHTML=`<b>${esc(actor.name||actor.username)}</b>${roleLabel}`;
-  $("#logoutBtn").onclick=()=>{DB.setSession(null);SESSION=null;renderAuth();};
+  $("#logoutBtn").onclick=()=>{DB.setSession(null);SESSION=null;DB._loaded=false;
+    DB._cache={accounts:[],users:[],questions:[],attempts:[],config:{}};renderAuth();};
+  const pwBtn=$("#pwBtn");
+  if(actor.role==="user"){pwBtn.classList.add("hidden");}
+  else{pwBtn.classList.remove("hidden");pwBtn.onclick=()=>changePasswordModal(actor);}
   if(actor.role==="user")renderCandidate();
   else renderStaff();
 }
@@ -538,10 +626,10 @@ function renderCadreSelect(){
         "Once locked, your cadre cannot be changed from your account. Only an administrator can reset it."),
       el("div",{class:"row",style:"margin-top:1rem"},
         el("button",{class:"btn sec",onclick:()=>m.close()},"Go back"),
-        el("button",{class:"btn warn",onclick:()=>{
-          const users=DB.users();const idx=users.findIndex(x=>x.id===SESSION.id);
-          users[idx].cadre=chosen.name;users[idx].targetPost=chosenPost;users[idx].cadreLocked=true;
-          DB.saveUsers(users);m.close();toast("Cadre locked. Welcome aboard.","ok");renderCandidate();
+        el("button",{class:"btn warn",onclick:async()=>{
+          await DB.updateUser(SESSION.id,{cadre:chosen.name,targetPost:chosenPost,cadreLocked:true});
+          if(BACKEND)await bootstrapData();
+          m.close();toast("Cadre locked. Welcome aboard.","ok");renderCandidate();
         }},"Yes, lock it in"))
     ));
   };
@@ -597,10 +685,9 @@ function candidatePractice(u){
   const c=el("div",{class:"card"},
     el("h2",{},"Start a practice session"),
     el("p",{},`Each session presents ${len} question(s) drawn from your cadre's bank, spanning all subject areas. You have ${Math.max(0,remaining)} attempt(s) left.`),
-    el("div",{class:"grid cols3",style:"margin:1rem 0"},
+    el("div",{class:"grid cols2",style:"margin:1rem 0"},
       el("div",{class:"stat"},el("div",{class:"n"},len),el("div",{class:"l"},"Questions")),
-      el("div",{class:"stat"},el("div",{class:"n"},(cfg.durationMins||30)+"m"),el("div",{class:"l"},"Time limit")),
-      el("div",{class:"stat"},el("div",{class:"n"},pool.length),el("div",{class:"l"},"In your bank"))),
+      el("div",{class:"stat"},el("div",{class:"n"},(cfg.durationMins||30)+"m"),el("div",{class:"l"},"Time limit"))),
     el("button",{class:"btn",disabled:canStart?null:"",onclick:()=>startExam(u)},
       canStart?"Begin practice session":"Cannot start yet")
   );
@@ -752,7 +839,7 @@ function gradeAndReview(){
   const score=per.filter(p=>p.correct).length,total=per.length;
   const attempt={id:uid("att"),userId:EXAM.user.id,cadre:EXAM.cadre,startedAt:EXAM.startedAt,
     endedAt:Date.now(),score,total,pct:Math.round(score/total*100),per};
-  const all=DB.attempts();all.push(attempt);DB.saveAttempts(all);
+  DB.addAttempt(attempt);
   EXAM=null;renderReview(attempt,true);
 }
 function answerKeyText(q){
@@ -890,8 +977,9 @@ function renderStaff(tab){
   const view=$("#view");view.innerHTML="";
   const tabDefs=[
     ...(isSuper?[["admins","Admins"]]:[]),
-    ["users","Candidates"],["bank","Question bank"],["analytics","Analytics"],["settings","Settings"]];
-  if(!tab)tab=tabDefs[0][0];
+    ["users","Candidates"],["bank","Question bank"],["analytics","Analytics"],
+    ...(isSuper?[["aigen","AI generator"]]:[])];
+  if(!tab||!tabDefs.some(t=>t[0]===tab))tab=tabDefs[0][0];
   view.append(el("div",{class:"card",style:"margin-bottom:.8rem"},
     el("div",{class:"row",style:"align-items:center"},
       el("div",{style:"flex:1"},
@@ -901,7 +989,23 @@ function renderStaff(tab){
   const tabs=el("div",{class:"tabs"},...tabDefs.map(([id,lab])=>
     el("button",{class:"tab"+(tab===id?" active":""),onclick:()=>renderStaff(id)},lab)));
   view.append(tabs);const body=el("div");view.append(body);
-  ({admins:staffAdmins,users:staffUsers,bank:staffBank,analytics:staffAnalytics,settings:staffSettings}[tab])(body,actor);
+  ({admins:staffAdmins,users:staffUsers,bank:staffBank,analytics:staffAnalytics,aigen:staffAIGen}[tab])(body,actor);
+}
+
+/* ---------- Change password (from top bar) ---------- */
+function changePasswordModal(actor){
+  const inp=el("input",{type:"password",placeholder:"New password"});
+  inp.addEventListener("keydown",e=>{if(e.key==="Enter")save();});
+  const m=modal(el("div",{},el("h3",{},"Change my password"),
+    el("div",{class:"field"},el("label",{},"New password"),inp),
+    el("div",{class:"row"},el("button",{class:"btn sec",onclick:()=>m.close()},"Cancel"),
+      el("button",{class:"btn",onclick:()=>save()},"Update"))));
+  function save(){
+    const v=inp.value;if(!v)return toast("Enter a password","err");
+    if(actor.kind==="staff")DB.updateAccount(actor.id,{passHash:hash(v),mustChange:false});
+    else DB.updateUser(actor.id,{passHash:hash(v)});
+    m.close();toast("Password changed","ok");
+  }
 }
 
 /* ---------- Admins (super only) ---------- */
@@ -913,12 +1017,12 @@ function staffAdmins(body){
       ["Full name","adm_name","text","e.g. Adebayo Johnson"],
       ["Username","adm_user","text","e.g. admin.ikeja"],
       ["Password","adm_pass","text","Give the admin a temporary password"]]),
-    el("button",{class:"btn",onclick:()=>{
+    el("button",{class:"btn",onclick:async()=>{
       const name=$("#adm_name").value.trim(),u=$("#adm_user").value.trim(),p=$("#adm_pass").value;
       if(!name||!u||!p)return toast("Fill all fields","err");
       if(existsUsername(u))return toast("That username is taken","err");
-      const accs=DB.accounts();accs.push({id:uid("acc"),role:"admin",username:u,passHash:hash(p),name,createdAt:Date.now()});
-      DB.saveAccounts(accs);toast("Admin created","ok");renderStaff("admins");
+      try{await DB.createAccount({id:uid("acc"),role:"admin",username:u,passHash:hash(p),name,createdAt:Date.now()});
+        toast("Admin created","ok");renderStaff("admins");}catch(e){toast(e.message,"err");}
     }},"Create admin")));
   body.append(el("div",{class:"card"},el("h2",{},`Admins (${admins.length})`),
     admins.length?el("div",{class:"table-wrap"},el("table",{},
@@ -929,7 +1033,7 @@ function staffAdmins(body){
           el("td",{},new Date(a.createdAt).toLocaleDateString()),
           el("td",{},el("button",{class:"btn danger sm",onclick:()=>{
             if(confirm(`Remove admin ${a.name}? Candidates they created are kept.`)){
-              DB.saveAccounts(DB.accounts().filter(x=>x.id!==a.id));renderStaff("admins");}
+              DB.deleteAccount(a.id);renderStaff("admins");}
           }},"Remove")));
       })))):el("div",{class:"empty"},"No admins yet.")));
 }
@@ -948,16 +1052,15 @@ function staffUsers(body,actor){
     el("div",{class:"field"},el("label",{},"Cadre (optional)"),
       el("select",{id:"u_cadre"},...cadreOpts),
       el("div",{class:"hint"},"Leave as 'Let candidate choose' to have them pick and lock it themselves at first login.")),
-    el("button",{class:"btn",onclick:()=>{
+    el("button",{class:"btn",onclick:async()=>{
       const name=$("#u_name").value.trim(),u=$("#u_user").value.trim(),p=$("#u_pass").value;
       const att=parseInt($("#u_att").value,10),cadre=$("#u_cadre").value;
       if(!name||!u||!p)return toast("Fill name, username and password","err");
       if(!Number.isFinite(att)||att<0)return toast("Enter a valid attempts number","err");
       if(existsUsername(u))return toast("That username is taken","err");
-      const users=DB.users();
-      users.push({id:uid("usr"),username:u,passHash:hash(p),name,createdBy:actor.id,createdAt:Date.now(),
+      try{await DB.createUser({id:uid("usr"),username:u,passHash:hash(p),name,createdBy:actor.id,createdAt:Date.now(),
         cadre:cadre||null,targetPost:null,cadreLocked:!!cadre,attemptsAllocated:att});
-      DB.saveUsers(users);toast("Candidate created","ok");renderStaff("users");
+        toast("Candidate created","ok");renderStaff("users");}catch(e){toast(e.message,"err");}
     }},"Create candidate")));
   body.append(el("div",{class:"card"},el("h2",{},`Candidates (${mine.length})`),
     mine.length?el("div",{class:"table-wrap"},el("table",{},
@@ -986,54 +1089,58 @@ function manageUser(id){
       el("div",{class:"row"},attInput,
         el("button",{class:"btn sm",onclick:()=>{
           const v=parseInt(attInput.value,10);if(!Number.isFinite(v)||v<0)return toast("Invalid number","err");
-          const users=DB.users();users.find(x=>x.id===id).attemptsAllocated=v;DB.saveUsers(users);
-          toast("Attempts updated","ok");
+          DB.updateUser(id,{attemptsAllocated:v});toast("Attempts updated","ok");
         }},"Save"))),
     el("div",{class:"row",style:"margin-top:.6rem"},
       el("button",{class:"btn sec sm",onclick:()=>{
         const np=prompt("New temporary password for "+u.username);if(!np)return;
-        const users=DB.users();users.find(x=>x.id===id).passHash=hash(np);DB.saveUsers(users);toast("Password reset","ok");
+        DB.updateUser(id,{passHash:hash(np)});toast("Password reset","ok");
       }},"Reset password"),
       el("button",{class:"btn warn sm",disabled:u.cadreLocked?null:"",onclick:()=>{
         if(!confirm("Unlock this candidate's cadre? They will choose again at next login."))return;
-        const users=DB.users();const x=users.find(y=>y.id===id);x.cadre=null;x.targetPost=null;x.cadreLocked=false;
-        DB.saveUsers(users);m.close();toast("Cadre unlocked","ok");renderStaff("users");
+        DB.updateUser(id,{cadre:null,targetPost:null,cadreLocked:false});
+        m.close();toast("Cadre unlocked","ok");renderStaff("users");
       }},"Reset cadre lock"),
       el("button",{class:"btn danger sm",onclick:()=>{
         if(!confirm("Delete this candidate and their results?"))return;
-        DB.saveUsers(DB.users().filter(x=>x.id!==id));DB.saveAttempts(DB.attempts().filter(a=>a.userId!==id));
-        m.close();toast("Candidate deleted","ok");renderStaff("users");
+        DB.deleteUser(id);m.close();toast("Candidate deleted","ok");renderStaff("users");
       }},"Delete"))
   ));
 }
 
-/* ---------- Question bank ---------- */
+/* ---------- Question bank (now also holds practice-session settings) ---------- */
 let BANK_FILTER={category:"",type:"",scope:""};
 function staffBank(body){
-  const qs=DB.questions();
+  const qs=DB.questions();const cfg=DB.config();
+  // Practice session settings (moved here from the old Settings tab)
+  body.append(el("div",{class:"card"},el("h2",{},"Practice session settings"),
+    el("p",{style:"color:var(--muted);margin-top:-.4rem;font-size:.9rem"},"Applies to every candidate's practice sessions."),
+    el("div",{class:"row"},
+      el("div",{class:"field",style:"flex:1"},el("label",{},"Questions per session"),
+        el("input",{type:"number",id:"set_len",value:cfg.examLength||20,min:"1"})),
+      el("div",{class:"field",style:"flex:1"},el("label",{},"Time limit (minutes)"),
+        el("input",{type:"number",id:"set_dur",value:cfg.durationMins||30,min:"1"}))),
+    el("button",{class:"btn",onclick:()=>{DB.saveConfig({examLength:+$("#set_len").value||20,durationMins:+$("#set_dur").value||30});
+      toast("Session settings saved","ok");}},"Save session settings")));
+  // Bank header + actions (AI button removed)
   body.append(el("div",{class:"card"},
     el("div",{class:"row",style:"align-items:center"},
       el("h2",{style:"flex:1;margin:0"},`Question bank — ${qs.length} item(s)`),
       el("button",{class:"btn sm",onclick:()=>addQuestionModal()},"+ Add question"),
-      el("button",{class:"btn sec sm",onclick:()=>csvModal()},"Bulk upload (CSV)"),
-      el("button",{class:"btn warn sm",onclick:()=>aiModal()},"✦ Generate with AI")),
+      el("button",{class:"btn sec sm",onclick:()=>csvModal()},"Bulk upload (CSV)")),
     el("div",{class:"row",style:"margin-top:1rem"},
       filterSel("Category",["",...CATEGORIES],BANK_FILTER.category,v=>{BANK_FILTER.category=v;renderStaff("bank");}),
       filterSel("Type",["",...TYPES.map(t=>t.id)],BANK_FILTER.type,v=>{BANK_FILTER.type=v;renderStaff("bank");},id=>TYPES.find(t=>t.id===id)?.label||id),
       filterSel("Scope",["","COMMON",...CADRES.map(c=>c.name)],BANK_FILTER.scope,v=>{BANK_FILTER.scope=v;renderStaff("bank");}))));
   let list=qs.filter(q=>(!BANK_FILTER.category||q.category===BANK_FILTER.category)
     &&(!BANK_FILTER.type||q.type===BANK_FILTER.type)&&(!BANK_FILTER.scope||q.scope===BANK_FILTER.scope));
-  // coverage summary
-  const cov=el("div",{class:"grid cols4",style:"margin-bottom:1rem"});
-  CATEGORIES.slice(0,4).concat().forEach(()=>{});
-  const covWrap=el("div",{class:"card"},el("h3",{},"Coverage by subject"),
+  body.append(el("div",{class:"card"},el("h3",{},"Coverage by subject"),
     el("div",{class:"catbar"},...CATEGORIES.map(c=>{
       const n=qs.filter(q=>q.category===c).length;
       return el("div",{class:"item"},el("div",{class:"lab"},c),
         el("div",{class:"track"},el("div",{class:"bar",style:`width:${Math.min(100,n)}%;background:${CAT_COLORS[c]}`})),
         el("div",{class:"pct"},n));
-    })));
-  body.append(covWrap);
+    }))));
   const listCard=el("div",{class:"card"},el("h3",{},`Showing ${list.length} item(s)`));
   if(!list.length)listCard.append(el("div",{class:"empty"},"No questions match these filters."));
   else list.slice(0,300).forEach(q=>listCard.append(bankRow(q)));
@@ -1048,7 +1155,7 @@ function bankRow(q){
       q.difficulty?el("span",{class:"badge lock"},q.difficulty):"",
       el("span",{style:"flex:1"}),
       el("button",{class:"btn danger sm",onclick:()=>{
-        if(confirm("Delete this question?")){DB.saveQuestions(DB.questions().filter(x=>x.id!==q.id));renderStaff("bank");}
+        if(confirm("Delete this question?")){DB.deleteQuestion(q.id);renderStaff("bank");}
       }},"Delete")),
     el("div",{style:"font-weight:600"},q.stem),
     el("div",{style:"font-size:.86rem;color:var(--muted);margin-top:.25rem"},"Answer: "+esc(answerKeyText(q))));
@@ -1086,7 +1193,7 @@ function addQuestionModal(){
     el("div",{class:"row"},el("button",{class:"btn sec",onclick:()=>m.close()},"Cancel"),
       el("button",{class:"btn",onclick:()=>{
         try{const q=buildQuestionFromForm(catSel.value,typeSel.value,scopeSel.value,diffSel.value,stem.value,explain.value);
-          const qs=DB.questions();qs.push({id:uid("q"),...q});DB.saveQuestions(qs);
+          DB.addQuestions([{id:uid("q"),...q}]);
           m.close();toast("Question added","ok");renderStaff("bank");
         }catch(e){toast(e.message,"err");}
       }},"Save question"))));
@@ -1176,41 +1283,81 @@ function importCSV(text){
     else throw new Error(`Row ${r+1}: unknown type "${type}"`);
     if(!q.stem)throw new Error(`Row ${r+1}: missing stem`);
     out.push({id:uid("q"),...q});}
-  const qs=DB.questions();qs.push(...out);DB.saveQuestions(qs);return out.length;
+  DB.addQuestions(out);return out.length;
 }
 
-/* ---------- AI generator ---------- */
-function aiModal(){
+/* ---------- AI generator (Super Admin only): provider + model config, then generate ---------- */
+const AI_MODELS={
+  anthropic:["claude-sonnet-4-6","claude-opus-4-8","claude-haiku-4-5"],
+  openrouter:["anthropic/claude-3.5-sonnet","openai/gpt-4o","google/gemini-2.0-flash-exp","meta-llama/llama-3.1-70b-instruct"]
+};
+const AI_ENDPOINTS={anthropic:"https://api.anthropic.com/v1/messages",openrouter:"https://openrouter.ai/api/v1/chat/completions"};
+function staffAIGen(body){
   const cfg=DB.config();
+  const provider=cfg.aiProvider||"anthropic";
+  const provSel=el("select",{},
+    el("option",{value:"anthropic",selected:provider==="anthropic"?"":null},"Anthropic — api.anthropic.com"),
+    el("option",{value:"openrouter",selected:provider==="openrouter"?"":null},"OpenRouter — openrouter.ai"));
+  const modelSel=el("select",{});
+  const customModel=el("input",{type:"text",placeholder:"custom model id",class:"hidden"});
+  const keyInp=el("input",{type:"password",value:cfg.aiKey||"",placeholder:provider==="anthropic"?"sk-ant-…":"sk-or-…"});
+  function fillModels(p){
+    modelSel.innerHTML="";
+    AI_MODELS[p].forEach(mm=>modelSel.append(el("option",{value:mm},mm)));
+    modelSel.append(el("option",{value:"__custom__"},"Custom…"));
+    if(cfg.aiModel&&AI_MODELS[p].includes(cfg.aiModel)){modelSel.value=cfg.aiModel;customModel.classList.add("hidden");}
+    else if(cfg.aiModel&&cfg.aiProvider===p){modelSel.value="__custom__";customModel.classList.remove("hidden");customModel.value=cfg.aiModel;}
+    else{modelSel.selectedIndex=0;customModel.classList.add("hidden");}
+    keyInp.placeholder=p==="anthropic"?"sk-ant-…":"sk-or-…";
+  }
+  fillModels(provider);
+  provSel.onchange=()=>fillModels(provSel.value);
+  modelSel.onchange=()=>customModel.classList.toggle("hidden",modelSel.value!=="__custom__");
+  body.append(el("div",{class:"card"},el("h2",{},"AI generator — configuration"),
+    el("p",{style:"color:var(--muted);margin-top:-.3rem;font-size:.9rem"},
+      "Pick a provider and model and paste the matching API key. The endpoint is set automatically for the provider you choose. Keys are stored only on this device; direct browser calls require the provider to allow CORS."),
+    el("div",{class:"row"},
+      el("div",{class:"field",style:"flex:1"},el("label",{},"Endpoint / provider"),provSel),
+      el("div",{class:"field",style:"flex:1"},el("label",{},"Model"),modelSel)),
+    el("div",{class:"field",id:"cm_wrap"},customModel),
+    el("div",{class:"field"},el("label",{},"API key"),keyInp),
+    el("button",{class:"btn",onclick:()=>{
+      const model=modelSel.value==="__custom__"?customModel.value.trim():modelSel.value;
+      if(!model)return toast("Choose or enter a model","err");
+      DB.saveConfig({aiProvider:provSel.value,aiModel:model,aiKey:keyInp.value.trim()});
+      toast("AI settings saved","ok");renderStaff("aigen");
+    }},"Save AI settings")));
+  // generate controls
   const catSel=el("select",{},...CATEGORIES.map(c=>el("option",{value:c},c)));
   const typeSel=el("select",{},...TYPES.map(t=>el("option",{value:t.id},t.label)));
   const scopeSel=el("select",{},el("option",{value:"COMMON"},"COMMON (all cadres)"),
     ...CADRES.map(c=>el("option",{value:c.name},c.name)));
-  const countSel=el("input",{type:"number",value:"5",min:"1",max:"20"});
+  const countInp=el("input",{type:"number",value:"5",min:"1",max:"20"});
   const diffSel=el("select",{},...["mixed","easy","medium","hard"].map(d=>el("option",{value:d},d)));
-  const status=el("div",{style:"margin-top:.6rem;font-size:.9rem"});
-  const m=modal(el("div",{},el("h3",{},"Generate questions with AI"),
-    cfg.aiKey?"":el("div",{class:"notice"},"No API key set. Add one under Settings → AI generator. Without a key this tool cannot run, but bulk CSV upload works fully offline."),
+  const status=el("div",{style:"margin-top:.6rem;font-size:.92rem"});
+  body.append(el("div",{class:"card"},el("h2",{},"Generate questions"),
+    cfg.aiKey?"":el("div",{class:"notice"},"No API key saved yet. Add one above, or use the Question bank → Bulk upload (CSV), which works fully offline."),
     el("div",{class:"row"},el("div",{class:"field",style:"flex:1"},el("label",{},"Subject"),catSel),
       el("div",{class:"field",style:"flex:1"},el("label",{},"Type"),typeSel)),
     el("div",{class:"row"},el("div",{class:"field",style:"flex:1"},el("label",{},"Scope"),scopeSel),
-      el("div",{class:"field",style:"flex:1"},el("label",{},"How many"),countSel),
+      el("div",{class:"field",style:"flex:1"},el("label",{},"How many"),countInp),
       el("div",{class:"field",style:"flex:1"},el("label",{},"Difficulty"),diffSel)),
-    status,
-    el("div",{class:"row"},el("button",{class:"btn sec",onclick:()=>m.close()},"Close"),
-      el("button",{class:"btn warn",onclick:async e=>{
-        const btn=e.target;btn.disabled=true;status.textContent="Generating…";
-        try{const items=await aiGenerate(catSel.value,typeSel.value,scopeSel.value,+countSel.value,diffSel.value);
-          const qs=DB.questions();qs.push(...items.map(q=>({id:uid("q"),...q})));DB.saveQuestions(qs);
-          status.innerHTML=`<span style="color:var(--success)">Added ${items.length} question(s).</span>`;
-          toast(`${items.length} generated`,"ok");renderStaff("bank");
-        }catch(err){status.innerHTML=`<span style="color:var(--danger)">${esc(err.message)}</span>`;}
-        finally{btn.disabled=false;}
-      }},"Generate")))); 
+    el("button",{class:"btn warn",onclick:async e=>{
+      const btn=e.target;btn.disabled=true;status.textContent="Generating…";
+      try{const items=await aiGenerate(catSel.value,typeSel.value,scopeSel.value,+countInp.value,diffSel.value);
+        DB.addQuestions(items.map(q=>({id:uid("q"),...q})));
+        status.innerHTML=`<span style="color:var(--success)">Added ${items.length} question(s) to the bank.</span>`;
+        toast(`${items.length} generated`,"ok");
+      }catch(err){status.innerHTML=`<span style="color:var(--danger)">${esc(err.message)}</span>`;}
+      finally{btn.disabled=false;}
+    }},"Generate & add to bank"),
+    status));
 }
 async function aiGenerate(category,type,scope,count,difficulty){
   const cfg=DB.config();
-  if(!cfg.aiKey)throw new Error("Set an API key in Settings first.");
+  if(!cfg.aiKey)throw new Error("Set an API key in the configuration above first.");
+  const provider=cfg.aiProvider||"anthropic";
+  const model=cfg.aiModel||(provider==="anthropic"?"claude-sonnet-4-6":"anthropic/claude-3.5-sonnet");
   const schema={mcq:'{"type":"mcq","stem":"...","options":["a","b","c","d"],"answer":0,"explanation":"..."}',
     truefalse:'{"type":"truefalse","stem":"...","answer":true,"explanation":"..."}',
     shortanswer:'{"type":"shortanswer","stem":"...","accept":["ans1","ans2"],"explanation":"..."}',
@@ -1221,14 +1368,21 @@ Subject: ${category}. Question type: ${type}.
 Return ONLY a JSON array, no prose, no markdown fences. Each element must match exactly this shape:
 ${schema}
 For ordering, list items in the CORRECT order. For matching, l is the prompt and r is its correct match. Every question must include a clear "explanation".`;
-  const res=await fetch(cfg.aiEndpoint,{method:"POST",
-    headers:{"Content-Type":"application/json","x-api-key":cfg.aiKey,
-      "anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-    body:JSON.stringify({model:cfg.aiModel||"claude-sonnet-4-6",max_tokens:2000,
-      messages:[{role:"user",content:prompt}]})});
-  if(!res.ok)throw new Error("API error "+res.status+" — check key/endpoint/CORS");
-  const data=await res.json();
-  let txt=(data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("\n").trim();
+  let txt="";
+  if(provider==="openrouter"){
+    const res=await fetch(AI_ENDPOINTS.openrouter,{method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+cfg.aiKey},
+      body:JSON.stringify({model,messages:[{role:"user",content:prompt}],max_tokens:2000})});
+    if(!res.ok)throw new Error("OpenRouter error "+res.status+" — check key/model/CORS");
+    const data=await res.json();txt=(data.choices?.[0]?.message?.content||"").trim();
+  }else{
+    const res=await fetch(AI_ENDPOINTS.anthropic,{method:"POST",
+      headers:{"Content-Type":"application/json","x-api-key":cfg.aiKey,
+        "anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+      body:JSON.stringify({model,max_tokens:2000,messages:[{role:"user",content:prompt}]})});
+    if(!res.ok)throw new Error("Anthropic error "+res.status+" — check key/model/CORS");
+    const data=await res.json();txt=(data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("\n").trim();
+  }
   txt=txt.replace(/^```json\s*|\s*```$/g,"").trim();
   let arr;try{arr=JSON.parse(txt);}catch{throw new Error("Model did not return valid JSON");}
   if(!Array.isArray(arr))arr=[arr];
@@ -1263,33 +1417,6 @@ function staffAnalytics(body,actor){
           el("td",{},ua.length?Math.max(...ua.map(a=>a.pct))+"%":"—"));}))))));
 }
 
-/* ---------- Settings ---------- */
-function staffSettings(body,actor){
-  const cfg=DB.config();
-  body.append(el("div",{class:"card"},el("h2",{},"Practice session settings"),
-    el("div",{class:"row"},
-      el("div",{class:"field",style:"flex:1"},el("label",{},"Questions per session"),
-        el("input",{type:"number",id:"set_len",value:cfg.examLength||20,min:"1"})),
-      el("div",{class:"field",style:"flex:1"},el("label",{},"Time limit (minutes)"),
-        el("input",{type:"number",id:"set_dur",value:cfg.durationMins||30,min:"1"}))),
-    el("button",{class:"btn",onclick:()=>{DB.saveConfig({examLength:+$("#set_len").value||20,durationMins:+$("#set_dur").value||30});
-      toast("Saved","ok");}},"Save session settings")));
-  body.append(el("div",{class:"card"},el("h2",{},"AI generator"),
-    el("p",{style:"color:var(--muted);font-size:.9rem;margin-top:-.3rem"},
-      "Used only by the ✦ Generate with AI tool. Stored on this device. Anthropic and OpenRouter endpoints both work; direct browser calls need CORS to be allowed."),
-    el("div",{class:"field"},el("label",{},"API endpoint"),el("input",{type:"text",id:"set_ep",value:cfg.aiEndpoint||""})),
-    el("div",{class:"row"},
-      el("div",{class:"field",style:"flex:1"},el("label",{},"Model"),el("input",{type:"text",id:"set_model",value:cfg.aiModel||""})),
-      el("div",{class:"field",style:"flex:1"},el("label",{},"API key"),el("input",{type:"password",id:"set_key",value:cfg.aiKey||"",placeholder:"sk-…"}))),
-    el("button",{class:"btn",onclick:()=>{DB.saveConfig({aiEndpoint:$("#set_ep").value.trim(),
-      aiModel:$("#set_model").value.trim(),aiKey:$("#set_key").value.trim()});toast("Saved","ok");}},"Save AI settings")));
-  body.append(el("div",{class:"card"},el("h2",{},"Change my password"),
-    el("div",{class:"row"},el("input",{type:"password",id:"set_pw",placeholder:"New password"}),
-      el("button",{class:"btn",onclick:()=>{const v=$("#set_pw").value;if(!v)return toast("Enter a password","err");
-        const accs=DB.accounts();const me=accs.find(a=>a.id===actor.id);me.passHash=hash(v);delete me.mustChange;
-        DB.saveAccounts(accs);toast("Password changed","ok");$("#set_pw").value="";}},"Update password"))));
-}
-
 /* ---------- small form helpers ---------- */
 function formGrid(fields){return el("div",{class:"row"},...fields.map(([label,id,type,ph])=>
   el("div",{class:"field",style:"flex:1;min-width:200px"},el("label",{},label),
@@ -1302,9 +1429,24 @@ function filterSel(label,vals,current,onChange,labelFn){
 function existsUsername(u){const l=u.toLowerCase();
   return DB.accounts().some(a=>a.username.toLowerCase()===l)||DB.users().some(a=>a.username.toLowerCase()===l);}
 
+/* ---------- content protection (deterrent only) ---------- */
+(function lockDown(){
+  const inField=t=>/^(input|textarea|select)$/i.test(t&&t.tagName);
+  document.addEventListener("contextmenu",e=>{e.preventDefault();});
+  document.addEventListener("dragstart",e=>{if(!inField(e.target))e.preventDefault();});
+  ["copy","cut"].forEach(ev=>document.addEventListener(ev,e=>{if(!inField(e.target))e.preventDefault();}));
+  document.addEventListener("keydown",e=>{
+    const k=(e.key||"").toLowerCase();
+    if(k==="f12"){e.preventDefault();return;}
+    if((e.ctrlKey||e.metaKey)&&e.shiftKey&&["i","j","c"].includes(k)){e.preventDefault();return;}
+    if((e.ctrlKey||e.metaKey)&&["u","s","p"].includes(k)){e.preventDefault();return;}
+    if((e.ctrlKey||e.metaKey)&&["c","x","a"].includes(k)&&!inField(e.target)){e.preventDefault();return;}
+  });
+})();
+
 /* ---------- init ---------- */
-DB.seed();
-boot();
+if(BACKEND){boot();}
+else{DB.seed();boot();}
 
 </script>
 </body>
