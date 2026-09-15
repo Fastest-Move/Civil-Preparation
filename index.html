@@ -541,10 +541,20 @@ function modal(node){const bg=el("div",{class:"modal-bg",onclick:e=>{if(e.target
 /* ---------- API transport (backend mode) ---------- */
 async function api(action,payload={}){
   const sess=DB.session();const token=(sess&&sess.token)||null;
-  const res=await fetch(API_URL,{method:"POST",
-    headers:{"Content-Type":"text/plain;charset=utf-8"},
-    body:JSON.stringify({action,token,...payload}),redirect:"follow"});
-  let data;try{data=await res.json();}catch(e){throw new Error("Server did not return valid data");}
+  let res;
+  try{
+    res=await fetch(API_URL,{method:"POST",
+      headers:{"Content-Type":"text/plain;charset=utf-8"},
+      body:JSON.stringify({action,token,...payload}),redirect:"follow"});
+  }catch(e){throw new Error("Can't reach the server — check your internet connection and the web-app URL.");}
+  const raw=await res.text();
+  let data;
+  try{data=JSON.parse(raw);}
+  catch(e){
+    if(/accounts\.google\.com|ServiceLogin|<!DOCTYPE html|<html|Sign in|Google Drive|requires? .*sign ?in|authoriz/i.test(raw))
+      throw new Error("The server is not public yet. In Apps Script: Deploy \u25B8 Manage deployments \u25B8 edit \u25B8 set \u2018Who has access\u2019 to \u2018Anyone\u2019, deploy a New version, and use the /exec link.");
+    throw new Error("Server did not return valid data"+(raw?(" ("+raw.slice(0,60).replace(/\s+/g," ").trim()+"\u2026)"):""));
+  }
   if(data&&data.ok===false){
     if(data.error==="auth"){DB.setSession(null);DB._loaded=false;renderAuth();}
     throw new Error(data.error||"Request failed");
