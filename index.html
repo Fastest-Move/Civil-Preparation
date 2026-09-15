@@ -657,6 +657,7 @@ function renderAuth(){
     const usr=DB.users().find(a=>a.username.toLowerCase()===u.toLowerCase());
     const found=acc||usr;
     if(!found||found.passHash!==hash(p)){toast("Incorrect username or password","err");return;}
+    if(acc&&acc.role==="super")localStorage.setItem("cbt_setupack","1");
     DB.setSession({kind:acc?"staff":"user",id:found.id});boot();
   };
   loginBtn.onclick=doLogin;
@@ -678,7 +679,7 @@ function renderAuth(){
     api("status").then(r=>{if(r&&r.setupDone===false)showSetupNotice();}).catch(()=>{});
   }else{
     const accs=DB.accounts();
-    if(accs.length===1&&accs[0].mustChange)showSetupNotice();
+    if(!localStorage.getItem("cbt_setupack")&&accs.length===1&&accs[0].mustChange)showSetupNotice();
   }
   wrap.append(el("div",{class:"auth-wrap"},card));
 }
