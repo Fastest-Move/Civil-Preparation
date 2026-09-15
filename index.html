@@ -672,15 +672,6 @@ function renderAuth(){
   const contact=el("div",{class:"auth-contact"},"Need help? ",
     el("a",{href:"https://wa.me/19102090087",target:"_blank",rel:"noopener"},"Chat with us on WhatsApp"));
   card.append(contact);
-  const showSetupNotice=()=>card.insertBefore(el("div",{class:"notice",style:"margin-top:1.1rem"},
-    "First-time setup — log in as ",el("b",{},"superadmin")," / ",el("b",{},"changeme123"),
-    ", then create your admins and change this password."),contact);
-  if(BACKEND){
-    api("status").then(r=>{if(r&&r.setupDone===false)showSetupNotice();}).catch(()=>{});
-  }else{
-    const accs=DB.accounts();
-    if(!localStorage.getItem("cbt_setupack")&&accs.length===1&&accs[0].mustChange)showSetupNotice();
-  }
   wrap.append(el("div",{class:"auth-wrap"},card));
 }
 
