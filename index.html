@@ -501,7 +501,7 @@ const SEED_ICT = [
    Paste your deployed Apps Script web-app URL between the quotes to
    switch the whole platform to the shared Google Sheets backend.
    Leave it empty to run standalone on this device (localStorage).   */
-const API_URL = "";
+const API_URL = "https://script.google.com/macros/library/d/1sjSbtK-vSBUs3sizQbxRHL-DNn8kOqE5DMvBZEhyGNewEDc6gDijIgUG/4";
 const BACKEND = !!API_URL;
 const ICT_CADRE = "Information & Communication Technology (ICT) Cadre";
 
@@ -601,6 +601,10 @@ const DB={
     const a=this.attempts();a.push(rec);this.saveAttempts(a);return Promise.resolve();},
   saveConfig(patch){if(BACKEND){this._cache.config={...this._cache.config,...patch};return this._bg(api("setConfig",{patch}));}
     this._w(this.k.cfg,{...this.config(),...patch});return Promise.resolve();},
+  dedupeQuestions(){if(BACKEND)return api("dedupeQuestions",{});
+    const qs=this.questions(),seen={},keep=[];let removed=0;
+    qs.forEach(q=>{const s=(q.scope||"")+"||"+(q.category||"")+"||"+(q.type||"")+"||"+(q.stem||"");if(seen[s])removed++;else{seen[s]=1;keep.push(q);}});
+    if(removed)this.saveQuestions(keep);return Promise.resolve({removed,remaining:keep.length});},
   /* offline seed */
   seed(){
     const cfg=this.config();
@@ -1222,7 +1226,7 @@ function manageUser(id){
 /* ---------- Question bank (now also holds practice-session settings) ---------- */
 let BANK_FILTER={category:"",type:"",scope:""};
 function staffBank(body){
-  const qs=DB.questions();const cfg=DB.config();
+  const qs=DB.questions();const cfg=DB.config();const isSuper=(currentActor()||{}).role==="super";
   // Practice session settings (moved here from the old Settings tab)
   body.append(el("div",{class:"card"},el("h2",{},"Practice session settings"),
     el("p",{style:"color:var(--muted);margin-top:-.4rem;font-size:.9rem"},"Applies to every candidate's practice sessions."),
@@ -1238,7 +1242,14 @@ function staffBank(body){
     el("div",{class:"row",style:"align-items:center"},
       el("h2",{style:"flex:1;margin:0"},`Question bank — ${qs.length} item(s)`),
       el("button",{class:"btn sm",onclick:()=>addQuestionModal()},"+ Add question"),
-      el("button",{class:"btn sec sm",onclick:()=>csvModal()},"Bulk upload (CSV)")),
+      el("button",{class:"btn sec sm",onclick:()=>csvModal()},"Bulk upload (CSV)"),
+      ...(isSuper?[el("button",{class:"btn warn sm",onclick:async e=>{
+        if(!confirm("Scan the database and remove duplicate questions? One copy of each is kept."))return;
+        const btn=e.target;btn.disabled=true;btn.textContent="Cleaning\u2026";
+        try{const r=await DB.dedupeQuestions();if(BACKEND)await bootstrapData();
+          toast(`Removed ${r.removed} duplicate(s); ${r.remaining} remain`,"ok");renderStaff("bank");}
+        catch(err){toast(err.message,"err");btn.disabled=false;btn.textContent="Remove duplicates";}
+      }},"Remove duplicates")]:[])),
     el("div",{class:"row",style:"margin-top:1rem"},
       filterSel("Category",["",...CATEGORIES],BANK_FILTER.category,v=>{BANK_FILTER.category=v;renderStaff("bank");}),
       filterSel("Type",["",...TYPES.map(t=>t.id)],BANK_FILTER.type,v=>{BANK_FILTER.type=v;renderStaff("bank");},id=>TYPES.find(t=>t.id===id)?.label||id),
