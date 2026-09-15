@@ -183,6 +183,8 @@ tr:hover td{background:#fafcfd}
 body{-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none}
 input,textarea,select{-webkit-user-select:text;-moz-user-select:text;-ms-user-select:text;user-select:text}
 img{-webkit-user-drag:none;user-drag:none;pointer-events:none}
+.spinner{width:34px;height:34px;border:3px solid var(--line,#dfe6ec);border-top-color:var(--primary,#0e4d6b);border-radius:50%;display:inline-block;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 /* WhatsApp contact */
 .wa-fab{position:fixed;right:16px;bottom:16px;z-index:9999;display:inline-flex;align-items:center;gap:.5rem;
   background:#25D366;color:#fff;text-decoration:none;padding:.6rem .95rem;border-radius:999px;
@@ -537,6 +539,12 @@ function toast(msg,kind=""){const t=el("div",{class:"toast "+kind},msg);document
 function modal(node){const bg=el("div",{class:"modal-bg",onclick:e=>{if(e.target===bg)bg.remove();}});
   const m=el("div",{class:"modal"});m.append(node);bg.append(m);$("#modalMount").append(bg);
   return{close:()=>bg.remove()};}
+function loadingCard(msg){return el("div",{class:"card",style:"text-align:center;padding:2.4rem"},
+  el("div",{class:"spinner"}),el("div",{style:"margin-top:.8rem;color:var(--muted)"},msg||"Loading…"));}
+function errorCard(msg,retry){return el("div",{class:"card",style:"text-align:center;padding:2rem"},
+  el("div",{style:"font-weight:700;color:var(--danger);margin-bottom:.5rem"},"Couldn't load your data"),
+  el("div",{style:"color:var(--muted);margin-bottom:1rem;max-width:560px;margin-left:auto;margin-right:auto"},msg||""),
+  el("button",{class:"btn",onclick:()=>{DB._loaded=false;retry&&retry();}},"Try again"));}
 
 /* ---------- API transport (backend mode) ---------- */
 async function api(action,payload={}){
@@ -663,7 +671,7 @@ function renderAuth(){
       try{
         const r=await api("login",{username:u,password:p});
         DB.setSession({kind:r.actor.kind||(r.role==="user"?"user":"staff"),id:r.actor.id,token:r.token});
-        DB._actor=r.actor;await bootstrapData();boot();
+        DB._actor=r.actor;DB._loaded=false;boot();
       }catch(e){toast(e.message||"Login failed","err");loginBtn.disabled=false;loginBtn.textContent="Log in";}
       return;
     }
@@ -691,8 +699,18 @@ function renderAuth(){
 
 /* ---------- APP SHELL ---------- */
 async function boot(){
-  if(BACKEND&&DB.session()&&!DB._loaded){
-    try{await bootstrapData();}catch(e){DB.setSession(null);return renderAuth();}
+  const sess=DB.session();
+  if(!sess){renderAuth();return;}
+  if(BACKEND&&!DB._loaded){
+    $("#auth").innerHTML="";$("#app").classList.remove("hidden");
+    $("#whoami").innerHTML="<b>Signing in\u2026</b>";
+    $("#pwBtn").classList.add("hidden");
+    const v=$("#view");v.innerHTML="";v.append(loadingCard("Loading your workspace\u2026"));
+    try{await bootstrapData();}
+    catch(e){
+      if(e.message==="auth"||/log in again|session expired/i.test(e.message)){DB.setSession(null);DB._loaded=false;return renderAuth();}
+      v.innerHTML="";v.append(errorCard(e.message,boot));return;
+    }
   }
   const actor=currentActor();
   if(!actor){renderAuth();return;}
@@ -1253,6 +1271,7 @@ function staffBank(body){
       el("h2",{style:"flex:1;margin:0"},`Question bank — ${qs.length} item(s)`),
       el("button",{class:"btn sm",onclick:()=>addQuestionModal()},"+ Add question"),
       el("button",{class:"btn sec sm",onclick:()=>csvModal()},"Bulk upload (CSV)"),
+      ...(BACKEND?[el("button",{class:"btn ghost sm",onclick:async e=>{const b=e.target;b.disabled=true;b.textContent="Refreshing\u2026";try{await bootstrapData();renderStaff("bank");}catch(err){toast(err.message,"err");b.disabled=false;b.textContent="Refresh";}}},"Refresh")]:[]),
       ...(isSuper?[el("button",{class:"btn warn sm",onclick:async e=>{
         if(!confirm("Scan the database and remove duplicate questions? One copy of each is kept."))return;
         const btn=e.target;btn.disabled=true;btn.textContent="Cleaning\u2026";
