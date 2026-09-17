@@ -598,17 +598,22 @@ const DB={
   /* local-only bulk writers (used by offline mode + seed) */
   saveAccounts(a){this._w(this.k.acc,a);}, saveUsers(u){this._w(this.k.usr,u);},
   saveQuestions(q){this._w(this.k.q,q);}, saveAttempts(a){this._w(this.k.att,a);},
-  /* granular writers (mode-aware; return a promise) */
-  createAccount(rec){if(BACKEND)return api("createAccount",{rec}).then(()=>{this._cache.accounts.push(rec);});
-    const a=this.accounts();a.push(rec);this.saveAccounts(a);return Promise.resolve();},
+  /* granular writers (mode-aware; return a promise). Passwords are sent as plaintext
+     in backend mode and hashed on the server; offline mode hashes locally (djb2). */
+  createAccount(rec,password){if(BACKEND)return api("createAccount",{rec,password}).then(()=>{this._cache.accounts.push({...rec});});
+    const a=this.accounts();a.push({...rec,passHash:hash(password)});this.saveAccounts(a);return Promise.resolve();},
   updateAccount(id,patch){if(BACKEND){const a=this._cache.accounts.find(x=>x.id===id);if(a)Object.assign(a,patch);return this._bg(api("updateAccount",{id,patch}));}
     const arr=this.accounts();const r=arr.find(x=>x.id===id);if(r)Object.assign(r,patch);this.saveAccounts(arr);return Promise.resolve();},
+  setAccountPassword(id,password){if(BACKEND){const a=this._cache.accounts.find(x=>x.id===id);if(a)delete a.mustChange;return this._bg(api("updateAccount",{id,patch:{},password}));}
+    const arr=this.accounts();const r=arr.find(x=>x.id===id);if(r){r.passHash=hash(password);delete r.mustChange;}this.saveAccounts(arr);return Promise.resolve();},
   deleteAccount(id){if(BACKEND){this._cache.accounts=this._cache.accounts.filter(x=>x.id!==id);return this._bg(api("deleteAccount",{id}));}
     this.saveAccounts(this.accounts().filter(x=>x.id!==id));return Promise.resolve();},
-  createUser(rec){if(BACKEND)return api("createUser",{rec}).then(()=>{this._cache.users.push(rec);});
-    const u=this.users();u.push(rec);this.saveUsers(u);return Promise.resolve();},
+  createUser(rec,password){if(BACKEND)return api("createUser",{rec,password}).then(()=>{this._cache.users.push({...rec});});
+    const u=this.users();u.push({...rec,passHash:hash(password)});this.saveUsers(u);return Promise.resolve();},
   updateUser(id,patch){if(BACKEND){const u=this._cache.users.find(x=>x.id===id);if(u)Object.assign(u,patch);return this._bg(api("updateUser",{id,patch}));}
     const arr=this.users();const r=arr.find(x=>x.id===id);if(r)Object.assign(r,patch);this.saveUsers(arr);return Promise.resolve();},
+  setUserPassword(id,password){if(BACKEND)return this._bg(api("updateUser",{id,patch:{},password}));
+    const arr=this.users();const r=arr.find(x=>x.id===id);if(r)r.passHash=hash(password);this.saveUsers(arr);return Promise.resolve();},
   deleteUser(id){if(BACKEND){this._cache.users=this._cache.users.filter(x=>x.id!==id);this._cache.attempts=this._cache.attempts.filter(a=>a.userId!==id);return this._bg(api("deleteUser",{id}));}
     this.saveUsers(this.users().filter(x=>x.id!==id));this.saveAttempts(this.attempts().filter(a=>a.userId!==id));return Promise.resolve();},
   addQuestions(recs){if(BACKEND){this._cache.questions.push(...recs);return this._bg(api("addQuestions",{recs}));}
@@ -686,7 +691,7 @@ function renderAuth(){
   pass.addEventListener("keydown",e=>{if(e.key==="Enter")doLogin();});
   const card=el("div",{class:"auth-card"},
     el("div",{class:"auth-brand"},el("span",{class:"mark"},"CBT"),el("span",{class:"t"},"CBT Platform")),
-    el("div",{class:"auth-sub"},"CBT FOR SEAP ON CIVIL SERVICE / LOCAL GOVT AND OTHER COMMISSIONS IN LAGOS — This is just a Practice Platform"),
+    el("div",{class:"auth-sub"},"Civil Service Promotion Examination — Practice Platform"),
     el("div",{class:"field"},el("label",{},"Username"),uname),
     el("div",{class:"field"},el("label",{},"Password"),pass),
     loginBtn
@@ -1145,8 +1150,8 @@ function changePasswordModal(actor){
       el("button",{class:"btn",onclick:()=>save()},"Update"))));
   function save(){
     const v=inp.value;if(!v)return toast("Enter a password","err");
-    if(actor.kind==="staff")DB.updateAccount(actor.id,{passHash:hash(v),mustChange:false});
-    else DB.updateUser(actor.id,{passHash:hash(v)});
+    if(actor.kind==="staff")DB.setAccountPassword(actor.id,v);
+    else DB.setUserPassword(actor.id,v);
     m.close();toast("Password changed","ok");
   }
 }
@@ -1164,7 +1169,7 @@ function staffAdmins(body){
       const name=$("#adm_name").value.trim(),u=$("#adm_user").value.trim(),p=$("#adm_pass").value;
       if(!name||!u||!p)return toast("Fill all fields","err");
       if(existsUsername(u))return toast("That username is taken","err");
-      try{await DB.createAccount({id:uid("acc"),role:"admin",username:u,passHash:hash(p),name,createdAt:Date.now()});
+      try{await DB.createAccount({id:uid("acc"),role:"admin",username:u,name,createdAt:Date.now()},p);
         toast("Admin created","ok");renderStaff("admins");}catch(e){toast(e.message,"err");}
     }},"Create admin")));
   body.append(el("div",{class:"card"},el("h2",{},`Admins (${admins.length})`),
@@ -1201,8 +1206,8 @@ function staffUsers(body,actor){
       if(!name||!u||!p)return toast("Fill name, username and password","err");
       if(!Number.isFinite(att)||att<0)return toast("Enter a valid attempts number","err");
       if(existsUsername(u))return toast("That username is taken","err");
-      try{await DB.createUser({id:uid("usr"),username:u,passHash:hash(p),name,createdBy:actor.id,createdAt:Date.now(),
-        cadre:cadre||null,targetPost:null,cadreLocked:!!cadre,attemptsAllocated:att});
+      try{await DB.createUser({id:uid("usr"),username:u,name,createdBy:actor.id,createdAt:Date.now(),
+        cadre:cadre||null,targetPost:null,cadreLocked:!!cadre,attemptsAllocated:att},p);
         toast("Candidate created","ok");renderStaff("users");}catch(e){toast(e.message,"err");}
     }},"Create candidate")));
   body.append(el("div",{class:"card"},el("h2",{},`Candidates (${mine.length})`),
@@ -1237,7 +1242,7 @@ function manageUser(id){
     el("div",{class:"row",style:"margin-top:.6rem"},
       el("button",{class:"btn sec sm",onclick:()=>{
         const np=prompt("New temporary password for "+u.username);if(!np)return;
-        DB.updateUser(id,{passHash:hash(np)});toast("Password reset","ok");
+        DB.setUserPassword(id,np);toast("Password reset","ok");
       }},"Reset password"),
       el("button",{class:"btn warn sm",disabled:u.cadreLocked?null:"",onclick:()=>{
         if(!confirm("Unlock this candidate's cadre? They will choose again at next login."))return;
