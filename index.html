@@ -541,33 +541,44 @@ function modal(node){const bg=el("div",{class:"modal-bg",onclick:e=>{if(e.target
   return{close:()=>bg.remove()};}
 function loadingCard(msg){return el("div",{class:"card",style:"text-align:center;padding:2.4rem"},
   el("div",{class:"spinner"}),el("div",{style:"margin-top:.8rem;color:var(--muted)"},msg||"Loading…"));}
-function errorCard(msg,retry){return el("div",{class:"card",style:"text-align:center;padding:2rem"},
-  el("div",{style:"font-weight:700;color:var(--danger);margin-bottom:.5rem"},"Couldn't load your data"),
-  el("div",{style:"color:var(--muted);margin-bottom:1rem;max-width:560px;margin-left:auto;margin-right:auto"},msg||""),
-  el("button",{class:"btn",onclick:()=>{DB._loaded=false;retry&&retry();}},"Try again"));}
+function errorCard(msg,retry){
+  const c=el("div",{class:"card",style:"text-align:center;padding:2rem"},
+    el("div",{style:"font-weight:700;color:var(--danger);margin-bottom:.5rem"},"Couldn't load your data"),
+    el("div",{style:"color:var(--muted);margin-bottom:1rem;max-width:620px;margin-left:auto;margin-right:auto"},msg||""),
+    el("button",{class:"btn",onclick:()=>{DB._loaded=false;retry&&retry();}},"Try again"));
+  if(BACKEND&&API_URL)c.append(el("div",{style:"margin-top:.9rem"},
+    el("a",{href:API_URL,target:"_blank",rel:"noopener",style:"color:var(--primary);font-weight:600;font-size:.9rem"},
+      "Open the server link — it should show {\"ok\":true}")));
+  return c;
+}
 
-/* ---------- API transport (backend mode) ---------- */
-async function api(action,payload={}){
-  const sess=DB.session();const token=(sess&&sess.token)||null;
-  let res;
-  try{
-    res=await fetch(API_URL,{method:"POST",
-      headers:{"Content-Type":"text/plain;charset=utf-8"},
-      body:JSON.stringify({action,token,...payload}),redirect:"follow"});
-  }catch(e){throw new Error("Can't reach the server — check your internet connection and the web-app URL.");}
-  const raw=await res.text();
-  let data;
-  try{data=JSON.parse(raw);}
-  catch(e){
-    if(/accounts\.google\.com|ServiceLogin|<!DOCTYPE html|<html|Sign in|Google Drive|requires? .*sign ?in|authoriz/i.test(raw))
-      throw new Error("The server is not public yet. In Apps Script: Deploy \u25B8 Manage deployments \u25B8 edit \u25B8 set \u2018Who has access\u2019 to \u2018Anyone\u2019, deploy a New version, and use the /exec link.");
-    throw new Error("Server did not return valid data"+(raw?(" ("+raw.slice(0,60).replace(/\s+/g," ").trim()+"\u2026)"):""));
-  }
-  if(data&&data.ok===false){
-    if(data.error==="auth"){DB.setSession(null);DB._loaded=false;renderAuth();}
-    throw new Error(data.error||"Request failed");
-  }
-  return data;
+let JSONP_N=0;
+function b64urlEnc(str){return btoa(unescape(encodeURIComponent(str))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");}
+/* ---------- API transport: JSONP over doGet (robust for GitHub Pages → Apps Script) ---------- */
+function api(action,payload={}){
+  return new Promise(function(resolve,reject){
+    const sess=DB.session();const token=(sess&&sess.token)||null;
+    let p;
+    try{p=b64urlEnc(JSON.stringify({action,token,...payload}));}
+    catch(e){reject(new Error("Could not encode the request."));return;}
+    const cb="cbtcb"+(++JSONP_N)+"x"+Date.now().toString(36);
+    const sep=API_URL.indexOf("?")>=0?"&":"?";
+    const s=document.createElement("script");
+    let done=false;
+    function fin(){done=true;try{delete window[cb];}catch(e){window[cb]=undefined;}if(s.parentNode)s.parentNode.removeChild(s);clearTimeout(timer);}
+    const timer=setTimeout(function(){if(done)return;fin();reject(new Error("The server didn\u2019t respond. Make sure API_URL is the /exec link and the web app is deployed to \u2018Anyone\u2019."));},25000);
+    window[cb]=function(data){
+      fin();
+      if(data&&data.ok===false){
+        if(data.error==="auth"){DB.setSession(null);DB._loaded=false;renderAuth();}
+        reject(new Error(data.error||"Request failed"));return;
+      }
+      resolve(data);
+    };
+    s.onerror=function(){if(done)return;fin();reject(new Error("Couldn\u2019t reach the server. Usually the web app isn\u2019t deployed to \u2018Anyone\u2019, or API_URL isn\u2019t the /exec link. Open the /exec link in a browser \u2014 it should show {\"ok\":true}."));};
+    s.src=API_URL+sep+"callback="+cb+"&p="+p;
+    (document.head||document.documentElement).appendChild(s);
+  });
 }
 async function bootstrapData(){
   const data=await api("bootstrap",{});
@@ -616,7 +627,9 @@ const DB={
     const arr=this.users();const r=arr.find(x=>x.id===id);if(r)r.passHash=hash(password);this.saveUsers(arr);return Promise.resolve();},
   deleteUser(id){if(BACKEND){this._cache.users=this._cache.users.filter(x=>x.id!==id);this._cache.attempts=this._cache.attempts.filter(a=>a.userId!==id);return this._bg(api("deleteUser",{id}));}
     this.saveUsers(this.users().filter(x=>x.id!==id));this.saveAttempts(this.attempts().filter(a=>a.userId!==id));return Promise.resolve();},
-  addQuestions(recs){if(BACKEND){this._cache.questions.push(...recs);return this._bg(api("addQuestions",{recs}));}
+  addQuestions(recs){if(BACKEND){this._cache.questions.push(...recs);
+      let pr=Promise.resolve();for(let i=0;i<recs.length;i+=4){const c=recs.slice(i,i+4);pr=pr.then(()=>api("addQuestions",{recs:c}));}
+      return this._bg(pr);}
     const q=this.questions();q.push(...recs);this.saveQuestions(q);return Promise.resolve();},
   deleteQuestion(id){if(BACKEND){this._cache.questions=this._cache.questions.filter(x=>x.id!==id);return this._bg(api("deleteQuestion",{id}));}
     this.saveQuestions(this.questions().filter(x=>x.id!==id));return Promise.resolve();},
@@ -691,7 +704,7 @@ function renderAuth(){
   pass.addEventListener("keydown",e=>{if(e.key==="Enter")doLogin();});
   const card=el("div",{class:"auth-card"},
     el("div",{class:"auth-brand"},el("span",{class:"mark"},"CBT"),el("span",{class:"t"},"CBT Platform")),
-    el("div",{class:"auth-sub"},"SIMULATED MOCK FOR SEAP ON CIVIL SERVICE / LOCAL GOVT AND OTHER COMMISSIONS IN LAGOS — Private Practice Platform"),
+    el("div",{class:"auth-sub"},"Civil Service Promotion Examination — Practice Platform"),
     el("div",{class:"field"},el("label",{},"Username"),uname),
     el("div",{class:"field"},el("label",{},"Password"),pass),
     loginBtn
