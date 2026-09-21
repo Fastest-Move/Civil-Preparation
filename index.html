@@ -580,6 +580,16 @@ function api(action,payload={}){
     (document.head||document.documentElement).appendChild(s);
   });
 }
+async function apiPost(action,payload={}){
+  const sess=DB.session();const token=(sess&&sess.token)||null;
+  let res;
+  try{res=await fetch(API_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
+    body:JSON.stringify({action,token,...payload}),redirect:"follow"});}
+  catch(e){throw new Error("Couldn\u2019t reach the server to save your session.");}
+  let data=null;try{data=JSON.parse(await res.text());}catch(e){return {ok:true,unverified:true};} // save likely succeeded even if the reply can\u2019t be read cross-origin
+  if(data&&data.ok===false){if(data.error==="auth"){DB.setSession(null);DB._loaded=false;}throw new Error(data.error||"Save failed");}
+  return data;
+}
 async function bootstrapData(){
   const data=await api("bootstrap",{});
   DB._cache.accounts=data.accounts||[];
@@ -633,7 +643,7 @@ const DB={
     const q=this.questions();q.push(...recs);this.saveQuestions(q);return Promise.resolve();},
   deleteQuestion(id){if(BACKEND){this._cache.questions=this._cache.questions.filter(x=>x.id!==id);return this._bg(api("deleteQuestion",{id}));}
     this.saveQuestions(this.questions().filter(x=>x.id!==id));return Promise.resolve();},
-  addAttempt(rec){if(BACKEND){this._cache.attempts.push(rec);return this._bg(api("addAttempt",{rec}));}
+  addAttempt(rec){if(BACKEND){this._cache.attempts.push(rec);return this._bg(apiPost("addAttempt",{rec}));}
     const a=this.attempts();a.push(rec);this.saveAttempts(a);return Promise.resolve();},
   saveConfig(patch){if(BACKEND){this._cache.config={...this._cache.config,...patch};return this._bg(api("setConfig",{patch}));}
     this._w(this.k.cfg,{...this.config(),...patch});return Promise.resolve();},
@@ -994,9 +1004,7 @@ function gradeQuestion(q){
 }
 function gradeAndReview(){
   if(timerHandle)clearInterval(timerHandle);
-  const per=EXAM.questions.map(q=>({qid:q.id,category:q.category,type:q.type,correct:gradeQuestion(q),
-    given:EXAM.responses[q.id],stem:q.stem,explanation:q.explanation,
-    answerKey:answerKeyText(q)}));
+  const per=EXAM.questions.map(q=>({qid:q.id,category:q.category,type:q.type,correct:gradeQuestion(q),given:EXAM.responses[q.id]}));
   const score=per.filter(p=>p.correct).length,total=per.length;
   const attempt={id:uid("att"),userId:EXAM.user.id,cadre:EXAM.cadre,startedAt:EXAM.startedAt,
     endedAt:Date.now(),score,total,pct:Math.round(score/total*100),per};
@@ -1032,26 +1040,30 @@ function renderReview(att,justFinished){
       el("div",{class:"stat"},el("div",{class:"n"},Math.round((att.endedAt-att.startedAt)/60000)+"m"),el("div",{class:"l"},"Time taken"))),
     el("p",{style:"color:var(--muted)"},"Every question you missed is explained below so you can learn from it."),
     el("button",{class:"btn sec",onclick:()=>renderCandidateHome("overview")},"Back to my dashboard")));
+  const qmap={};DB.questions().forEach(q=>qmap[q.id]=q);
   const wrong=att.per.filter(p=>!p.correct), right=att.per.filter(p=>p.correct);
   if(wrong.length){
     view.append(el("h2",{style:"margin:1.4rem 0 .6rem"},`Questions to review (${wrong.length})`));
-    wrong.forEach((p,i)=>view.append(reviewCard(p,i+1,true)));
+    wrong.forEach((p,i)=>view.append(reviewCard(p,qmap[p.qid],i+1,true)));
   }
   if(right.length){
     view.append(el("h2",{style:"margin:1.4rem 0 .6rem"},`Answered correctly (${right.length})`));
-    right.forEach((p,i)=>view.append(reviewCard(p,i+1,false)));
+    right.forEach((p,i)=>view.append(reviewCard(p,qmap[p.qid],i+1,false)));
   }
 }
-function reviewCard(p,n,showExplain){
+function reviewCard(p,q,n,showExplain){
+  const stem=q?q.stem:"(this question is no longer in the bank)";
+  const answerKey=q?answerKeyText(q):"—";
+  const explanation=q?(q.explanation||"—"):"—";
   const card=el("div",{class:"review-q "+(p.correct?"correct":"wrong")},
     el("div",{style:"display:flex;justify-content:space-between;gap:1rem"},
-      el("div",{style:"font-weight:600"},`${n}. ${p.stem}`),
+      el("div",{style:"font-weight:600"},`${n}. ${stem}`),
       el("span",{class:"badge "+(p.correct?"ok":"bad")},p.correct?"Correct":"Missed")),
     el("div",{style:"margin-top:.7rem;font-size:.94rem"},
       el("div",{class:"kv"},el("span",{},"Your answer"),el("b",{style:p.correct?"color:var(--success)":"color:var(--danger)"},givenText(p))),
-      el("div",{class:"kv"},el("span",{},"Correct answer"),el("b",{},p.answerKey))));
+      el("div",{class:"kv"},el("span",{},"Correct answer"),el("b",{},answerKey))));
   if(!p.correct||showExplain)
-    card.append(el("div",{class:"explain"},el("b",{},"Why: "),p.explanation||"—"));
+    card.append(el("div",{class:"explain"},el("b",{},"Why: "),explanation));
   return card;
 }
 
@@ -1223,7 +1235,10 @@ function staffUsers(body,actor){
         cadre:cadre||null,targetPost:null,cadreLocked:!!cadre,attemptsAllocated:att},p);
         toast("Candidate created","ok");renderStaff("users");}catch(e){toast(e.message,"err");}
     }},"Create candidate")));
-  body.append(el("div",{class:"card"},el("h2",{},`Candidates (${mine.length})`),
+  body.append(el("div",{class:"card"},
+    el("div",{class:"row",style:"align-items:center"},
+      el("h2",{style:"flex:1;margin:0"},`Candidates (${mine.length})`),
+      ...(BACKEND?[el("button",{class:"btn ghost sm",onclick:async e=>{const b=e.target;b.disabled=true;b.textContent="Refreshing\u2026";try{await bootstrapData();renderStaff("users");}catch(err){toast(err.message,"err");b.disabled=false;b.textContent="Refresh";}}},"Refresh")]:[])),
     mine.length?el("div",{class:"table-wrap"},el("table",{},
       el("thead",{},el("tr",{},el("th",{},"Name"),el("th",{},"Username"),el("th",{},"Cadre"),
         el("th",{},"Attempts"),el("th",{},"Avg"),el("th",{},"Actions"))),
@@ -1599,6 +1614,8 @@ function staffAnalytics(body,actor){
   const users=actor.role==="super"?DB.users():DB.users().filter(u=>u.createdBy===actor.id);
   const uids=new Set(users.map(u=>u.id));
   const atts=DB.attempts().filter(a=>uids.has(a.userId));
+  if(BACKEND)body.append(el("div",{class:"row",style:"justify-content:flex-end;margin-bottom:.4rem"},
+    el("button",{class:"btn ghost sm",onclick:async e=>{const b=e.target;b.disabled=true;b.textContent="Refreshing\u2026";try{await bootstrapData();renderStaff("analytics");}catch(err){toast(err.message,"err");b.disabled=false;b.textContent="Refresh";}}},"Refresh")));
   body.append(el("div",{class:"grid cols4"},
     el("div",{class:"card stat"},el("div",{class:"n"},users.length),el("div",{class:"l"},"Candidates")),
     el("div",{class:"card stat"},el("div",{class:"n"},DB.questions().length),el("div",{class:"l"},"Questions in bank")),
